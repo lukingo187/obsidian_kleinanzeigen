@@ -78,6 +78,8 @@ export const PORTO_OPTIONS: PortoOption[] = [
 export interface ArticleTemplate {
   id: string;
   name: string;
+  artikel?: string;
+  preis?: number;
   zustand?: Zustand;
   preisart?: Preisart;
   porto?: PortoOption;
@@ -122,7 +124,6 @@ export interface PluginSettings {
   aiProviders: Record<AIProvider, AIProviderConfig>;
   aiUsage: Record<AIProvider, AIUsageRecord>;
   descriptionFooter: string;
-  taxLimit: number;
   ebayEnabled: boolean;
   templates: ArticleTemplate[];
 }
@@ -161,7 +162,6 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     openai: { ...DEFAULT_USAGE },
   },
   descriptionFooter: DEFAULT_DESCRIPTION_FOOTER,
-  taxLimit: 1000,
   ebayEnabled: false,
   templates: [],
 };

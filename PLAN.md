@@ -12,12 +12,14 @@ This document tracks all ideas, phases, architecture decisions, and progress for
 interface Listing {
   // Core Info
   artikel: string;
+  beschreibung?: string;
   zustand: 'Neu mit Etikett' | 'Neu' | 'Sehr Gut' | 'Gut' | 'In Ordnung' | 'Defekt';
-  status: 'Aktiv' | 'Verkauft' | 'Verschickt' | 'Abgeschlossen' | 'Abgelaufen';
+  status: 'Aktiv' | 'Verkauft' | 'Verschickt' | 'Abgeschlossen' | 'Abgelaufen' | 'Archiviert';
 
   // Pricing
-  preis: string;         // z.B. "15€ VB" oder "25€ Festpreis"
-  verkauft_fuer?: string;
+  preis: number;
+  preisart: 'VB' | 'Festpreis';
+  verkauft_fuer?: number;
 
   // Listing History
   eingestellt_am: string;          // aktuelles Einstelldatum
@@ -34,12 +36,15 @@ interface Listing {
   bezahlart?: string;
 
   // Shipping
-  porto: PortoOption;
+  porto?: PortoOption;
   anschrift?: string;   // "Name\nStraße\nPLZ Ort"
   label_erstellt: boolean;
   sendungsnummer?: string;
   verschickt: boolean;
   verschickt_am?: string;
+
+  // Meta
+  filePath?: string;
 }
 ```
 
@@ -63,30 +68,24 @@ interface Listing {
 
 ```
 src/
-├── main.ts                 # Entry point, Plugin class
+├── main.ts                 # Entry point, Plugin class, modal orchestration
 ├── models/
-│   ├── listing.ts          # Listing interface, PortoOption type
-│   └── template.ts         # Template interface
+│   └── listing.ts          # Listing, ArticleTemplate, PluginSettings, type definitions
 ├── views/
-│   ├── dashboard.ts        # Main ItemView (Sidebar/Tab)
-│   └── statsView.ts        # Statistics panel (embedded in dashboard)
+│   └── dashboard.ts        # Main ItemView (Overview, Stats, Settings tabs)
 ├── modals/
-│   ├── newItemModal.ts     # New item form (incl. AI button, template selection)
+│   ├── newItemModal.ts     # New item form (AI button, template selection)
 │   ├── editListingModal.ts # Edit existing listing
 │   ├── soldModal.ts        # Mark as sold
 │   ├── shipModal.ts        # Mark as shipped
 │   └── relistModal.ts      # Relist expired item
-├── settings/
-│   └── settingsTab.ts      # Plugin settings (AI provider, API keys, themes, tax limit)
 ├── services/
 │   ├── vaultService.ts     # Read/write MD notes via Obsidian API
 │   ├── statsService.ts     # Calculations (profit, averages, sale duration)
-│   ├── aiService.ts        # Provider-agnostic AI description generation
-│   ├── templateService.ts  # Template CRUD (stored in plugin settings)
-│   └── exportService.ts    # CSV and PDF export
+│   ├── aiService.ts        # Provider-agnostic AI description generation (Anthropic, OpenAI)
+│   └── templateService.ts  # Template CRUD (stored in plugin settings)
 └── utils/
-    ├── formatting.ts       # Date/currency formatting
-    └── porto.ts            # Porto options and prices
+    └── formatting.ts       # Date/currency/porto formatting
 ```
 
 ---
@@ -135,7 +134,6 @@ Plugin settings tab and AI-powered description generation.
   - AI Provider selection (Anthropic, OpenAI)
   - API key input per provider (mit Sichtbarkeits-Toggle)
   - Model selection per provider
-  - Tax threshold configuration (default: 1.000€/Jahr)
   - API-Key Test-Button
   - API-Nutzungsübersicht (Kosten, Aufrufe)
   - Beschreibungs-Footer (Privatverkauf-Disclaimer)
@@ -151,7 +149,7 @@ Plugin settings tab and AI-powered description generation.
 Streamlined workflows for repeat sellers and completed items.
 
 - [x] **Artikel-Templates** (`src/services/templateService.ts`)
-  - Template erstellen aus: Zustand, Porto, Preisart, Beschreibungsvorlage
+  - Template erstellen aus: Artikelname, Preis, Zustand, Porto, Preisart, Beschreibungsvorlage
   - Anwendungsfall: z.B. "PS4 Spiel" Template — gleicher Zustand, gleiches Porto, nur Titel ändern
   - Template-Verwaltung im Einstellungen-Tab (erstellen, bearbeiten, löschen)
   - "Aus Template erstellen" Auswahl im New Item Modal (erscheint wenn Templates vorhanden)
@@ -159,8 +157,10 @@ Streamlined workflows for repeat sellers and completed items.
   - Neuer Status: `Archiviert` (nach Abgeschlossen)
   - Archivieren-Button für abgeschlossene Artikel
   - Archivierte Artikel standardmäßig ausgeblendet
-  - Archiv-Toggle in der Übersicht zum Ein-/Ausblenden
+  - Archiv-Filter-Button in der Filter-Leiste (rechts, abgesetzt durch Spacer)
   - Löschen-Button (mit Bestätigung) für archivierte Artikel
+- [x] **Abgelaufen-Aktion**
+  - Aktive Artikel können direkt als "Abgelaufen" markiert werden
 
 ### Phase 6 — Bulk-Operationen & Export
 
@@ -183,19 +183,16 @@ Efficient multi-item management and data export.
   - Einzelartikel oder Gesamtliste
   - Statistiken/Zusammenfassung inkl.
 
-### Phase 7 — Erweiterte Statistiken & Steuerlimit
+### Phase 7 — Erweiterte Statistiken
 
-Better insights and tax compliance awareness.
+Better insights into sales performance.
 
 - [x] **Erweiterte Statistiken** im Statistik-Tab
+  - Einheitliches Stats-Grid (4 Spalten, 8 Karten): Gesamt eingestellt, Gesamt verkauft, Umsatz, Gewinn, Ø Verkaufsdauer, Ø Verkaufspreis, Gesamtporto, API-Kosten
   - Durchschnittliche Verkaufsdauer (Eingestellt → Verkauft) in Tagen
   - Durchschnittlicher Verkaufspreis
   - Gesamtportokosten-Übersicht
-- [x] **Steuerlimit-Anzeige**
-  - Privatverkäufer-Freigrenze: 1.000€/Jahr (konfigurierbar in Settings)
-  - Fortschrittsbalken im Statistik-Tab: "XXX€ / 1.000€ Freigrenze"
-  - Warnung ab 80% (gelb), Überschreitung rot hervorgehoben
-  - Bezieht sich auf Gesamteinnahmen (verkauft_fuer) im laufenden Kalenderjahr
+  - API-Kostenübersicht (Anthropic + OpenAI)
 
 ### Phase 8 — eBay-Integration (Zukunft)
 
@@ -206,7 +203,6 @@ Extend the plugin to also track eBay listings alongside Kleinanzeigen.
   - Archiv wird über Filter/Toggle in den Tabs erreichbar (statt eigenem Tab)
 - [ ] `plattform: 'Kleinanzeigen' | 'eBay'` Feld im Listing-Model
 - [ ] eBay-spezifische Felder (Gebühren, Auktions- vs. Sofortkauf, etc.)
-- [ ] Steuerlimit berücksichtigt beide Plattformen zusammen
 
 ---
 
@@ -259,9 +255,9 @@ Ein Ribbon-Icon, ein Dashboard, Tab-basierte Navigation.
 [ Übersicht ]  [ Statistiken ]  [ Einstellungen ]
 ```
 
-- **Übersicht** — Aktive Artikel-Tabelle mit Filtern, Suche, Aktionen + Archiv-Toggle
-- **Statistiken** — Monats-/Jahresübersicht, Verkaufsdauer, Steuerlimit
-- **Einstellungen** — AI-Provider, API-Keys, Templates, Steuerlimit, eBay aktivieren
+- **Übersicht** — Aktive Artikel-Tabelle mit Filtern (inkl. Archiv), Suche, Aktionen
+- **Statistiken** — Stats-Grid, Monats-/Jahresübersicht, Verkaufsdauer, API-Kosten
+- **Einstellungen** — AI-Provider, API-Keys, Templates, Beschreibungs-Footer, eBay aktivieren
 
 ### Erweiterte Tabs (eBay aktiviert in Einstellungen)
 
@@ -275,9 +271,9 @@ Ein Ribbon-Icon, ein Dashboard, Tab-basierte Navigation.
 - **Statistiken** — Plattform-Filter, kombiniertes Steuerlimit
 - **Einstellungen** — wie oben
 
-### Archiv-Toggle
+### Archiv-Filter
 
-Archiv ist kein eigener Tab, sondern ein Toggle/Checkbox in jeder Artikelliste (Übersicht, Kleinanzeigen, eBay). Standardmäßig aus — zeigt nur aktive/laufende Artikel. Eingeschaltet zeigt archivierte Artikel (mit Löschen-Option).
+Archiv ist kein eigener Tab, sondern ein Filter-Button in der Übersicht (rechts abgesetzt in der Filter-Leiste). Standardmäßig zeigt "Alle" nur aktive/laufende Artikel. Klick auf "Archiv" zeigt archivierte Artikel (mit Löschen-Option).
 
 ---
 

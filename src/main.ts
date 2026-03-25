@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf } from 'obsidian';
+import { Notice, Plugin, WorkspaceLeaf } from 'obsidian';
 import { VaultService } from './services/vaultService';
 import { DashboardView, DASHBOARD_VIEW_TYPE } from './views/dashboard';
 import { NewItemModal } from './modals/newItemModal';
@@ -67,8 +67,12 @@ export default class KleinanzeigenPlugin extends Plugin {
 
   private openNewItemModal() {
     new NewItemModal(this.app, this, async (listing: Listing) => {
-      await this.vaultService.createListing(listing);
-      this.refreshDashboard();
+      try {
+        await this.vaultService.createListing(listing);
+        this.refreshDashboard();
+      } catch (e: any) {
+        new Notice(`Fehler beim Erstellen: ${e.message}`);
+      }
     }).open();
   }
 

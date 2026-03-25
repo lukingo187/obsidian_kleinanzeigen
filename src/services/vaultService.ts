@@ -9,14 +9,17 @@ export class VaultService {
   private async ensureFolder(): Promise<void> {
     const folder = this.app.vault.getAbstractFileByPath(BASE_FOLDER);
     if (!folder) {
-      await this.app.vault.createFolder(BASE_FOLDER);
+      try {
+        await this.app.vault.createFolder(BASE_FOLDER);
+      } catch { /* folder created by concurrent call */ }
     }
   }
 
   async createListing(listing: Listing): Promise<TFile> {
     await this.ensureFolder();
 
-    const filePath = normalizePath(`${BASE_FOLDER}/${listing.artikel}.md`);
+    const safeName = listing.artikel.replace(/[\\/:*?"<>|]/g, '_');
+    const filePath = normalizePath(`${BASE_FOLDER}/${safeName}.md`);
     const content = this.buildFileContent(listing);
     return await this.app.vault.create(filePath, content);
   }
@@ -73,12 +76,12 @@ export class VaultService {
   }
 
   private async parseListing(file: TFile): Promise<Listing | null> {
-    let fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+    let fm: Record<string, any> | null | undefined = this.app.metadataCache.getFileCache(file)?.frontmatter;
 
     // Fallback: if cache isn't ready yet, parse the file content directly
     if (!fm) {
       const content = await this.app.vault.read(file);
-      fm = this.parseFrontmatter(content) as any;
+      fm = this.parseFrontmatter(content);
     }
 
     if (!fm) return null;
@@ -120,9 +123,9 @@ export class VaultService {
       const key = line.slice(0, idx).trim();
       let value: any = line.slice(idx + 1).trim();
 
-      // Remove surrounding quotes
+      // Remove surrounding quotes and unescape newlines
       if (value.startsWith('"') && value.endsWith('"')) {
-        value = value.slice(1, -1);
+        value = value.slice(1, -1).replace(/\\n/g, '\n');
       }
       // Parse booleans and numbers
       else if (value === 'true') value = true;
@@ -157,7 +160,7 @@ export class VaultService {
     if (listing.bezahlart) lines.push(`bezahlart: "${listing.bezahlart}"`);
 
     if (listing.porto) lines.push(`porto: "${listing.porto}"`);
-    if (listing.anschrift) lines.push(`anschrift: "${listing.anschrift}"`);
+    if (listing.anschrift) lines.push(`anschrift: "${listing.anschrift.replace(/\n/g, '\\n')}"`);
     lines.push(`label_erstellt: ${listing.label_erstellt}`);
     if (listing.sendungsnummer) lines.push(`sendungsnummer: "${listing.sendungsnummer}"`);
     lines.push(`verschickt: ${listing.verschickt}`);

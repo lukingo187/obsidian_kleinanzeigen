@@ -5,10 +5,12 @@ An Obsidian plugin to track eBay Kleinanzeigen listings from creation to shipmen
 ## Features
 
 - **Quick Actions** — List, sell, ship, and complete items in 1–2 clicks
-- **Dashboard** — Table view with status filters, inline actions, and real-time profit calculations
+- **Dashboard** — Table view with status filters, search, inline actions, and real-time profit calculations
 - **Shipping Management** — Address storage, label tracking, carrier support (DHL, Hermes, …)
-- **Statistics** — Monthly revenue, profit/loss, average sale price, shipping costs
-- **Claude AI** — Optional description generation via Claude API
+- **Statistics** — Monthly/yearly stats, revenue, profit/loss, average sale price/duration, shipping costs, API costs
+- **AI Descriptions** — Optional AI-powered description generation via Anthropic (Claude) or OpenAI (GPT)
+- **Templates** — Reusable article templates with pre-filled name, price, condition, shipping, and description
+- **Archive** — Archive completed items and review/delete them later
 - **Local Data** — All data stays in your vault as Markdown notes with YAML frontmatter
 
 ## Status Icons
@@ -17,24 +19,21 @@ An Obsidian plugin to track eBay Kleinanzeigen listings from creation to shipmen
 |------|--------|
 | 🟢 | Aktiv — Currently listed |
 | 💰 | Verkauft — Payment pending/received |
-| ⚠️ | Zu verschicken — Needs shipping |
 | 🚚 | Verschickt — In transit |
 | ✅ | Abgeschlossen — Delivered & done |
 | ⏳ | Abgelaufen — Expired, ready to relist |
+| 📦 | Archiviert — Completed & archived |
 
 ## Data Storage
 
-Each listing is a Markdown note with YAML frontmatter stored in a `Kleinanzeigen/` folder:
+Each listing is a Markdown note with YAML frontmatter stored in a `kleinanzeigen/` folder:
 
 ```
-Kleinanzeigen/
-├── Active/
-│   ├── iPhone 12.md
-│   └── Gaming Chair.md
-├── Sold/
-│   └── MacBook Pro.md
-└── Completed/
-    └── Desk Lamp.md
+kleinanzeigen/
+├── iPhone 12.md
+├── Gaming Chair.md
+├── MacBook Pro.md
+└── Desk Lamp.md
 ```
 
 ## Development
@@ -70,7 +69,7 @@ npm run build
 
 - TypeScript + esbuild (based on obsidian-sample-plugin)
 - Obsidian API (no extra UI frameworks)
-- @anthropic-ai/sdk (optional, for AI description generation)
+- AI via `requestUrl` — Anthropic (Claude) and OpenAI (GPT), no external SDKs
 
 ## License
 

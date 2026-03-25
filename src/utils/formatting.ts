@@ -6,9 +6,10 @@ export function formatDate(date: Date): string {
 }
 
 export function formatDateDE(dateStr: string): string {
-  if (!dateStr || !dateStr.includes('-')) return dateStr ?? '';
-  const [y, m, d] = dateStr.split('-');
-  return `${d}.${m}.${y}`;
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length < 3) return dateStr;
+  return `${parts[2]}.${parts[1]}.${parts[0]}`;
 }
 
 export function formatCurrency(amount: number): string {

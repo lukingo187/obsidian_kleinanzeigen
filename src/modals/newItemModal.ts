@@ -13,12 +13,13 @@ export class NewItemModal extends Modal {
   private onSubmit: (listing: Listing) => void;
   private plugin: KleinanzeigenPlugin;
 
-  // References to form elements for AI pre-fill
+  // References to form elements for AI/template pre-fill
   private artikelInput!: HTMLInputElement;
+  private preisInput!: HTMLInputElement;
   private zustandSelect!: HTMLSelectElement;
+  private preisartSelect!: HTMLSelectElement;
   private portoSelect!: HTMLSelectElement;
   private descTextArea!: HTMLTextAreaElement;
-  private fieldsContainer!: HTMLElement;
 
   constructor(app: App, plugin: KleinanzeigenPlugin, onSubmit: (listing: Listing) => void) {
     super(app);
@@ -46,8 +47,7 @@ export class NewItemModal extends Modal {
     contentEl.createEl('hr', { cls: 'ka-divider' });
 
     // Structured fields
-    this.fieldsContainer = contentEl.createDiv();
-    this.renderFields(this.fieldsContainer);
+    this.renderFields(contentEl.createDiv());
   }
 
   private renderTemplateSection(container: HTMLElement, templates: ArticleTemplate[]) {
@@ -66,12 +66,21 @@ export class NewItemModal extends Modal {
       const selected = templates.find(t => t.id === select.value);
       if (!selected) return;
 
+      if (selected.artikel) {
+        this.artikel = selected.artikel;
+        this.artikelInput.value = selected.artikel;
+      }
+      if (selected.preis) {
+        this.preis = selected.preis;
+        this.preisInput.value = selected.preis.toString();
+      }
       if (selected.zustand) {
         this.zustand = selected.zustand;
         this.zustandSelect.value = selected.zustand;
       }
       if (selected.preisart) {
         this.preisart = selected.preisart;
+        this.preisartSelect.value = selected.preisart;
       }
       if (selected.porto) {
         this.porto = selected.porto;
@@ -100,8 +109,7 @@ export class NewItemModal extends Modal {
     });
 
     if (!this.hasApiKey()) {
-      const noKeyHint = section.createDiv({ cls: 'ka-ai-no-key' });
-      noKeyHint.setText('Kein API-Key konfiguriert. Bitte unter Einstellungen → KI-Konfiguration hinterlegen.');
+      section.createDiv({ cls: 'ka-ai-no-key', text: 'Kein API-Key konfiguriert. Bitte unter Einstellungen → KI-Konfiguration hinterlegen.' });
       return;
     }
 
@@ -166,11 +174,12 @@ export class NewItemModal extends Modal {
   }
 
   private renderFields(container: HTMLElement) {
-    const artikelSetting = new Setting(container)
+    new Setting(container)
       .setName('Artikel *')
       .addText(text => {
         text.setPlaceholder('z.B. MacBook Pro 2020');
         text.onChange(v => this.artikel = v);
+        text.inputEl.addClass('ka-artikel-input');
         this.artikelInput = text.inputEl;
       });
 
@@ -187,14 +196,17 @@ export class NewItemModal extends Modal {
 
     new Setting(container)
       .setName('Preis (€) *')
-      .addText(text => text
-        .setPlaceholder('25.00')
-        .onChange(v => this.preis = parseFloat(v) || 0))
+      .addText(text => {
+        text.setPlaceholder('25.00');
+        text.onChange(v => this.preis = parseFloat(v) || 0);
+        this.preisInput = text.inputEl;
+      })
       .addDropdown(dd => {
         dd.addOption('VB', 'VB');
         dd.addOption('Festpreis', 'Festpreis');
         dd.setValue(this.preisart);
         dd.onChange(v => this.preisart = v as Preisart);
+        this.preisartSelect = dd.selectEl;
       });
 
     new Setting(container)

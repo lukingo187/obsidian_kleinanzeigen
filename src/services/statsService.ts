@@ -2,10 +2,8 @@ import { Listing } from '../models/listing';
 import { parsePortoPrice } from '../utils/formatting';
 
 export interface ExtendedStats {
-  avgSaleDurationDays: number | null;  // null if not enough data
+  avgSaleDurationDays: number | null;
   avgSalePrice: number | null;
-  totalShippingCost: number;
-  currentYearRevenue: number;
 }
 
 export interface Stats {
@@ -13,6 +11,7 @@ export interface Stats {
   soldCount: number;
   shippedCount: number;
   completedCount: number;
+  totalSoldCount: number;
   totalRevenue: number;
   totalShippingCost: number;
   totalProfit: number;
@@ -32,6 +31,7 @@ export function calculateStats(listings: Listing[]): Stats {
   let soldCount = 0;
   let shippedCount = 0;
   let completedCount = 0;
+  let totalSoldCount = 0;
   let totalRevenue = 0;
   let totalShippingCost = 0;
 
@@ -42,6 +42,8 @@ export function calculateStats(listings: Listing[]): Stats {
       case 'Verschickt': shippedCount++; break;
       case 'Abgeschlossen': completedCount++; break;
     }
+
+    if (l.verkauft) totalSoldCount++;
 
     if (l.verkauft_fuer != null && typeof l.verkauft_fuer === 'number') {
       totalRevenue += l.verkauft_fuer;
@@ -57,6 +59,7 @@ export function calculateStats(listings: Listing[]): Stats {
     soldCount,
     shippedCount,
     completedCount,
+    totalSoldCount,
     totalRevenue,
     totalShippingCost,
     totalProfit: totalRevenue - totalShippingCost,
@@ -64,8 +67,6 @@ export function calculateStats(listings: Listing[]): Stats {
 }
 
 export function calculateExtendedStats(listings: Listing[]): ExtendedStats {
-  const currentYear = new Date().getFullYear().toString();
-
   // Avg sale duration: days from eingestellt_am to verkauft_am
   const durations: number[] = [];
   for (const l of listings) {
@@ -90,23 +91,7 @@ export function calculateExtendedStats(listings: Listing[]): ExtendedStats {
     ? salePrices.reduce((a, b) => a + b, 0) / salePrices.length
     : null;
 
-  // Total shipping costs (only for sold items)
-  let totalShippingCost = 0;
-  for (const l of listings) {
-    if (l.verkauft && l.porto) {
-      totalShippingCost += parsePortoPrice(l.porto);
-    }
-  }
-
-  // Current year revenue (for tax limit)
-  let currentYearRevenue = 0;
-  for (const l of listings) {
-    if (l.verkauft_fuer != null && l.verkauft_am && l.verkauft_am.startsWith(currentYear)) {
-      currentYearRevenue += l.verkauft_fuer;
-    }
-  }
-
-  return { avgSaleDurationDays, avgSalePrice, totalShippingCost, currentYearRevenue };
+  return { avgSaleDurationDays, avgSalePrice };
 }
 
 export function calculateMonthlyStats(listings: Listing[]): PeriodStats[] {

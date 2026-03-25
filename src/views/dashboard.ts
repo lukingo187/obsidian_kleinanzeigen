@@ -1,4 +1,4 @@
-import { ItemView, Modal, Notice, WorkspaceLeaf } from 'obsidian';
+import { ItemView, Notice, WorkspaceLeaf } from 'obsidian';
 import { Listing, Status, AIProvider, DEFAULT_MODELS, ArticleTemplate, ZUSTAND_OPTIONS, Zustand, PORTO_OPTIONS, PortoOption, Preisart } from '../models/listing';
 import { VaultService } from '../services/vaultService';
 import { AIService } from '../services/aiService';
@@ -9,7 +9,7 @@ import type KleinanzeigenPlugin from '../main';
 
 export const DASHBOARD_VIEW_TYPE = 'kleinanzeigen-dashboard';
 
-type FilterStatus = 'Alle' | Status;
+type FilterStatus = 'Alle' | 'Archiv' | Status;
 type Tab = 'overview' | 'stats' | 'settings';
 type StatsPeriod = 'monthly' | 'yearly';
 
@@ -31,7 +31,6 @@ export class DashboardView extends ItemView {
   private expandedListing: Listing | null = null;
   private activeTab: Tab = 'overview';
   private statsPeriod: StatsPeriod = 'monthly';
-  private showArchived = false;
   private editingTemplate: ArticleTemplate | null = null;
 
   constructor(
@@ -115,15 +114,16 @@ export class DashboardView extends ItemView {
     }
   }
 
+  private async transitionStatus(listing: Listing, status: Status) {
+    await this.vaultService.updateListing({ ...listing, status });
+    setTimeout(() => this.refresh(), 200);
+  }
+
   // ── Overview Tab ──
 
   private renderOverview(root: HTMLElement) {
     this.renderSummaryStats(root);
-
-    const controlsRow = root.createDiv({ cls: 'ka-controls-row' });
-    this.renderFilters(controlsRow);
-    this.renderArchiveToggle(controlsRow);
-
+    this.renderFilters(root);
     this.renderSearch(root);
 
     if (this.expandedListing) {
@@ -131,23 +131,6 @@ export class DashboardView extends ItemView {
     } else {
       this.renderTable(root);
     }
-  }
-
-  private renderArchiveToggle(container: HTMLElement) {
-    const archivedCount = this.listings.filter(l => l.status === 'Archiviert').length;
-    const toggleEl = container.createDiv({ cls: 'ka-archive-toggle' });
-
-    const btn = toggleEl.createEl('button', {
-      text: this.showArchived
-        ? '← Aktive Artikel'
-        : `Archiv ${archivedCount > 0 ? `(${archivedCount})` : ''}`,
-      cls: `ka-archive-btn ${this.showArchived ? 'ka-archive-btn-active' : ''}`,
-    });
-    btn.addEventListener('click', () => {
-      this.showArchived = !this.showArchived;
-      this.expandedListing = null;
-      this.render();
-    });
   }
 
   private renderSummaryStats(root: HTMLElement) {
@@ -185,6 +168,17 @@ export class DashboardView extends ItemView {
         this.render();
       });
     }
+
+    filtersEl.createDiv({ cls: 'ka-filter-spacer' });
+    const archivBtn = filtersEl.createEl('button', {
+      text: 'Archiv',
+      cls: `ka-filter-btn ${this.filter === 'Archiv' ? 'ka-filter-active' : ''}`,
+    });
+    archivBtn.addEventListener('click', () => {
+      this.filter = 'Archiv';
+      this.expandedListing = null;
+      this.render();
+    });
   }
 
   private renderSearch(root: HTMLElement) {
@@ -212,20 +206,15 @@ export class DashboardView extends ItemView {
   }
 
   private getFilteredListings(): Listing[] {
-    // When archive is shown, show only archived items
-    if (this.showArchived) {
-      let filtered = this.listings.filter(l => l.status === 'Archiviert');
-      if (this.searchQuery.trim()) {
-        const q = this.searchQuery.toLowerCase();
-        filtered = filtered.filter(l => l.artikel.toLowerCase().includes(q));
-      }
-      return filtered;
-    }
+    let filtered: Listing[];
 
-    // Normal view: exclude archived items
-    let filtered = this.filter === 'Alle'
-      ? this.listings.filter(l => l.status !== 'Archiviert')
-      : this.listings.filter(l => l.status === this.filter);
+    if (this.filter === 'Archiv') {
+      filtered = this.listings.filter(l => l.status === 'Archiviert');
+    } else if (this.filter === 'Alle') {
+      filtered = this.listings.filter(l => l.status !== 'Archiviert');
+    } else {
+      filtered = this.listings.filter(l => l.status === this.filter);
+    }
 
     if (this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase();
@@ -280,30 +269,23 @@ export class DashboardView extends ItemView {
   }
 
   private renderActions(cell: HTMLElement, listing: Listing) {
-    const actionMap: Partial<Record<Status, { label: string; cls: string; handler: () => void }>> = {
-      'Aktiv': { label: 'Verkauft', cls: 'ka-sold-btn', handler: () => this.callbacks.onSold(listing) },
-      'Verkauft': { label: 'Verschicken', cls: 'ka-ship-btn', handler: () => this.callbacks.onShip(listing) },
-      'Verschickt': {
-        label: 'Abschließen', cls: 'ka-complete-btn', handler: async () => {
-          listing.status = 'Abgeschlossen';
-          await this.vaultService.updateListing(listing);
-          setTimeout(() => this.refresh(), 200);
-        },
-      },
-      'Abgeschlossen': {
-        label: 'Archivieren', cls: 'ka-archive-action-btn', handler: async () => {
-          listing.status = 'Archiviert';
-          await this.vaultService.updateListing(listing);
-          setTimeout(() => this.refresh(), 200);
-        },
-      },
-      'Abgelaufen': { label: 'Neu einstellen', cls: 'ka-relist-btn', handler: () => this.callbacks.onRelist(listing) },
+    const actionMap: Partial<Record<Status, { label: string; cls: string; handler: () => void }[]>> = {
+      'Aktiv': [
+        { label: 'Verkauft', cls: 'ka-sold-btn', handler: () => this.callbacks.onSold(listing) },
+        { label: 'Abgelaufen', cls: 'ka-expired-btn', handler: () => this.transitionStatus(listing, 'Abgelaufen') },
+      ],
+      'Verkauft': [{ label: 'Verschicken', cls: 'ka-ship-btn', handler: () => this.callbacks.onShip(listing) }],
+      'Verschickt': [{ label: 'Abschließen', cls: 'ka-complete-btn', handler: () => this.transitionStatus(listing, 'Abgeschlossen') }],
+      'Abgeschlossen': [{ label: 'Archivieren', cls: 'ka-archive-action-btn', handler: () => this.transitionStatus(listing, 'Archiviert') }],
+      'Abgelaufen': [{ label: 'Neu einstellen', cls: 'ka-relist-btn', handler: () => this.callbacks.onRelist(listing) }],
     };
 
-    const action = actionMap[listing.status];
-    if (action) {
-      const btn = cell.createEl('button', { text: action.label, cls: `ka-action-btn ${action.cls}` });
-      btn.addEventListener('click', (e) => { e.stopPropagation(); action.handler(); });
+    const actions = actionMap[listing.status];
+    if (actions) {
+      for (const action of actions) {
+        const btn = cell.createEl('button', { text: action.label, cls: `ka-action-btn ${action.cls}` });
+        btn.addEventListener('click', (e) => { e.stopPropagation(); action.handler(); });
+      }
     }
 
     // Delete button for archived items
@@ -349,10 +331,10 @@ export class DashboardView extends ItemView {
     if (listing.eingestellt_am) {
       this.addDetailRow(listingSection, 'Eingestellt am', formatDateDE(listing.eingestellt_am));
     }
-    if (listing.erstmals_eingestellt_am && listing.eingestellt_count > 1) {
+    if (listing.erstmals_eingestellt_am) {
       this.addDetailRow(listingSection, 'Erstmals eingestellt', formatDateDE(listing.erstmals_eingestellt_am));
-      this.addDetailRow(listingSection, 'Anzahl Einstellungen', listing.eingestellt_count.toString());
     }
+    this.addDetailRow(listingSection, 'Anzahl Einstellungen', listing.eingestellt_count.toString());
 
     // Verkauf
     if (listing.verkauft) {
@@ -407,9 +389,26 @@ export class DashboardView extends ItemView {
   private renderStatsView(root: HTMLElement) {
     const totalStats = calculateStats(this.listings);
     const extStats = calculateExtendedStats(this.listings);
+    const aiCost = this.plugin.settings.aiUsage.anthropic.totalCostUSD
+      + this.plugin.settings.aiUsage.openai.totalCostUSD;
 
-    // Steuerlimit-Fortschrittsbalken
-    this.renderTaxLimitBar(root, extStats.currentYearRevenue, this.plugin.settings.taxLimit);
+    // Unified stats grid (8 cards, 4 per row)
+    const statsGrid = root.createDiv({ cls: 'ka-stats-grid' });
+    const cards: [string, string][] = [
+      [this.listings.length.toString(), 'Gesamt eingestellt'],
+      [totalStats.totalSoldCount.toString(), 'Gesamt verkauft'],
+      [formatCurrency(totalStats.totalRevenue), 'Gesamt Umsatz'],
+      [formatCurrency(totalStats.totalProfit), 'Gesamt Gewinn'],
+      [extStats.avgSaleDurationDays !== null ? `${extStats.avgSaleDurationDays}d` : '—', 'Ø Verkaufsdauer'],
+      [extStats.avgSalePrice !== null ? formatCurrency(extStats.avgSalePrice) : '—', 'Ø Verkaufspreis'],
+      [formatCurrency(totalStats.totalShippingCost), 'Gesamtporto'],
+      [`$${aiCost.toFixed(4)}`, 'API-Kosten'],
+    ];
+    for (const [value, label] of cards) {
+      const card = statsGrid.createDiv({ cls: 'ka-stat-card' });
+      card.createDiv({ cls: 'ka-stat-value', text: value });
+      card.createDiv({ cls: 'ka-stat-label', text: label });
+    }
 
     // Zeitraum-Toggle
     const toggle = root.createDiv({ cls: 'ka-filters' });
@@ -424,23 +423,6 @@ export class DashboardView extends ItemView {
         this.render();
       });
     }
-
-    // Zusammenfassung
-    const summaryEl = root.createDiv({ cls: 'ka-stats' });
-    const summaryItems: [string, string][] = [
-      ['Gesamt eingestellt', this.listings.length.toString()],
-      ['Gesamt verkauft', this.listings.filter(l => l.verkauft).length.toString()],
-      ['Gesamt Umsatz', formatCurrency(totalStats.totalRevenue)],
-      ['Gesamt Gewinn', formatCurrency(totalStats.totalProfit)],
-    ];
-    for (const [label, value] of summaryItems) {
-      const card = summaryEl.createDiv({ cls: 'ka-stat-card' });
-      card.createDiv({ cls: 'ka-stat-value', text: value });
-      card.createDiv({ cls: 'ka-stat-label', text: label });
-    }
-
-    // Erweiterte Statistiken
-    this.renderExtendedStats(root, extStats);
 
     // Perioden-Tabelle
     const periodData = this.statsPeriod === 'monthly'
@@ -474,61 +456,6 @@ export class DashboardView extends ItemView {
     }
   }
 
-  private renderTaxLimitBar(root: HTMLElement, currentRevenue: number, taxLimit: number) {
-    if (taxLimit <= 0) return;
-
-    const pct = Math.min((currentRevenue / taxLimit) * 100, 100);
-    const year = new Date().getFullYear();
-    const remaining = Math.max(taxLimit - currentRevenue, 0);
-    const isWarning = pct >= 80;
-    const isExceeded = currentRevenue > taxLimit;
-
-    const barEl = root.createDiv({ cls: `ka-tax-bar-wrap ${isWarning ? 'ka-tax-warning' : ''}` });
-    const labelRow = barEl.createDiv({ cls: 'ka-tax-label-row' });
-    labelRow.createSpan({ text: `Freigrenze ${year}`, cls: 'ka-tax-title' });
-    labelRow.createSpan({
-      text: `${formatCurrency(currentRevenue)} / ${formatCurrency(taxLimit)}`,
-      cls: 'ka-tax-amount',
-    });
-
-    const bar = barEl.createDiv({ cls: 'ka-tax-bar' });
-    const fill = bar.createDiv({ cls: `ka-tax-fill ${isExceeded ? 'ka-tax-exceeded' : isWarning ? 'ka-tax-near' : ''}` });
-    fill.style.width = `${pct}%`;
-
-    if (isExceeded) {
-      barEl.createDiv({ cls: 'ka-tax-hint ka-tax-hint-danger', text: `Freigrenze überschritten! Bitte steuerliche Beratung in Anspruch nehmen.` });
-    } else if (isWarning) {
-      barEl.createDiv({ cls: 'ka-tax-hint ka-tax-hint-warn', text: `Noch ${formatCurrency(remaining)} bis zur Freigrenze.` });
-    } else {
-      barEl.createDiv({ cls: 'ka-tax-hint', text: `Noch ${formatCurrency(remaining)} bis zur Freigrenze.` });
-    }
-  }
-
-  private renderExtendedStats(root: HTMLElement, ext: ReturnType<typeof calculateExtendedStats>) {
-    const hasData = ext.avgSaleDurationDays !== null || ext.avgSalePrice !== null || ext.totalShippingCost > 0;
-    if (!hasData) return;
-
-    const section = root.createDiv({ cls: 'ka-stats ka-ext-stats' });
-
-    if (ext.avgSaleDurationDays !== null) {
-      const card = section.createDiv({ cls: 'ka-stat-card' });
-      card.createDiv({ cls: 'ka-stat-value', text: `${ext.avgSaleDurationDays}d` });
-      card.createDiv({ cls: 'ka-stat-label', text: 'Ø Verkaufsdauer' });
-    }
-
-    if (ext.avgSalePrice !== null) {
-      const card = section.createDiv({ cls: 'ka-stat-card' });
-      card.createDiv({ cls: 'ka-stat-value', text: formatCurrency(ext.avgSalePrice) });
-      card.createDiv({ cls: 'ka-stat-label', text: 'Ø Verkaufspreis' });
-    }
-
-    if (ext.totalShippingCost > 0) {
-      const card = section.createDiv({ cls: 'ka-stat-card' });
-      card.createDiv({ cls: 'ka-stat-value', text: formatCurrency(ext.totalShippingCost) });
-      card.createDiv({ cls: 'ka-stat-label', text: 'Gesamtporto' });
-    }
-  }
-
   // ── Settings Tab ──
 
   private renderSettingsView(root: HTMLElement) {
@@ -539,7 +466,6 @@ export class DashboardView extends ItemView {
     this.renderAIUsage(wrap, settings);
     this.renderDescriptionFooter(wrap, settings);
     this.renderTemplatesSettings(wrap, settings);
-    this.renderTaxSettings(wrap, settings);
     this.renderPlatformSettings(wrap, settings);
   }
 
@@ -556,6 +482,8 @@ export class DashboardView extends ItemView {
         const info = row.createDiv({ cls: 'ka-template-info' });
         info.createSpan({ text: tpl.name, cls: 'ka-template-name' });
         const meta: string[] = [];
+        if (tpl.artikel) meta.push(tpl.artikel);
+        if (tpl.preis) meta.push(`${tpl.preis}€`);
         if (tpl.zustand) meta.push(tpl.zustand);
         if (tpl.porto) meta.push(tpl.porto);
         if (tpl.preisart) meta.push(tpl.preisart);
@@ -600,10 +528,27 @@ export class DashboardView extends ItemView {
     form.createEl('h4', { text: isNew ? 'Neues Template' : 'Template bearbeiten' });
 
     // Name
-    this.addSettingRow(form, 'Name *', el => {
+    this.addSettingRow(form, 'Template-Name *', el => {
       const input = el.createEl('input', { type: 'text', cls: 'ka-setting-input', placeholder: 'z.B. PS4 Spiel' });
       input.value = tpl.name;
       input.addEventListener('input', () => { tpl.name = input.value; });
+    });
+
+    // Artikel
+    this.addSettingRow(form, 'Artikelname', el => {
+      const input = el.createEl('input', { type: 'text', cls: 'ka-setting-input', placeholder: 'Vordefinierter Artikelname' });
+      input.value = tpl.artikel ?? '';
+      input.addEventListener('input', () => { tpl.artikel = input.value || undefined; });
+    });
+
+    // Preis
+    this.addSettingRow(form, 'Preis (€)', el => {
+      const input = el.createEl('input', { type: 'number', cls: 'ka-setting-input', placeholder: '0.00' });
+      input.value = tpl.preis?.toString() ?? '';
+      input.addEventListener('input', () => {
+        const val = parseFloat(input.value);
+        tpl.preis = !isNaN(val) && val > 0 ? val : undefined;
+      });
     });
 
     // Zustand
@@ -664,6 +609,8 @@ export class DashboardView extends ItemView {
       if (isNew) {
         settings.templates = TemplateService.create(settings.templates, {
           name: tpl.name.trim(),
+          artikel: tpl.artikel,
+          preis: tpl.preis,
           zustand: tpl.zustand,
           preisart: tpl.preisart,
           porto: tpl.porto,
@@ -824,25 +771,6 @@ export class DashboardView extends ItemView {
     });
 
     section.createDiv({ cls: 'ka-setting-hint', text: 'Wird automatisch an jede KI-generierte Beschreibung angehängt (z.B. Haftungsausschluss).' });
-  }
-
-  private renderTaxSettings(wrap: HTMLElement, settings: typeof this.plugin.settings) {
-    const section = wrap.createDiv({ cls: 'ka-settings-section' });
-    section.createEl('h3', { text: 'Steuerlimit' });
-
-    this.addSettingRow(section, 'Freigrenze (€/Jahr)', el => {
-      const input = el.createEl('input', { type: 'number', cls: 'ka-setting-input' });
-      input.value = settings.taxLimit.toString();
-      input.addEventListener('change', () => {
-        const val = parseInt(input.value);
-        if (!isNaN(val) && val >= 0) {
-          settings.taxLimit = val;
-          this.plugin.saveSettings();
-        }
-      });
-    });
-
-    section.createDiv({ cls: 'ka-setting-hint', text: 'Privatverkäufer-Freigrenze in Deutschland: 1.000€/Jahr. Ab diesem Betrag sind Einnahmen steuerpflichtig.' });
   }
 
   private renderPlatformSettings(wrap: HTMLElement, settings: typeof this.plugin.settings) {
