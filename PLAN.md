@@ -65,19 +65,25 @@ interface Listing {
 src/
 ├── main.ts                 # Entry point, Plugin class
 ├── models/
-│   └── listing.ts          # Listing interface, PortoOption type
+│   ├── listing.ts          # Listing interface, PortoOption type
+│   └── template.ts         # Template interface
 ├── views/
 │   ├── dashboard.ts        # Main ItemView (Sidebar/Tab)
-│   └── statsView.ts        # Statistics panel
+│   └── statsView.ts        # Statistics panel (embedded in dashboard)
 ├── modals/
-│   ├── newItemModal.ts     # New item form (incl. Claude API button)
+│   ├── newItemModal.ts     # New item form (incl. AI button, template selection)
+│   ├── editListingModal.ts # Edit existing listing
 │   ├── soldModal.ts        # Mark as sold
 │   ├── shipModal.ts        # Mark as shipped
 │   └── relistModal.ts      # Relist expired item
+├── settings/
+│   └── settingsTab.ts      # Plugin settings (AI provider, API keys, themes, tax limit)
 ├── services/
 │   ├── vaultService.ts     # Read/write MD notes via Obsidian API
-│   ├── statsService.ts     # Calculations (profit, averages)
-│   └── claudeService.ts    # Claude API for description generation
+│   ├── statsService.ts     # Calculations (profit, averages, sale duration)
+│   ├── aiService.ts        # Provider-agnostic AI description generation
+│   ├── templateService.ts  # Template CRUD (stored in plugin settings)
+│   └── exportService.ts    # CSV and PDF export
 └── utils/
     ├── formatting.ts       # Date/currency formatting
     └── porto.ts            # Porto options and prices
@@ -121,29 +127,95 @@ Insights and data portability.
 - [x] Statistik-Tab mit Monats-/Jahresübersicht (Eingestellt, Verkauft, Umsatz, Portokosten, Gewinn)
 - [x] Alle bestehenden Artikel auf Standardformat migriert
 
-### Phase 4 — AI & Integrations
+### Phase 4 — Settings & AI-Beschreibungen
 
-Advanced features.
+Plugin settings tab and AI-powered description generation.
 
-- [ ] Claude API integration — "Beschreibung generieren" button in New Item Modal
-  - Model: claude-haiku-4-5 (~0.001€ per description)
-  - Input: article name, condition, category
-  - Output: Kleinanzeigen-ready description with Haftungsausschluss
-  - API key stored in plugin settings
-- [ ] Auto-fetch tracking status from carrier APIs
-- [ ] Generate shipping labels (DHL/Hermes integration)
-- [ ] Bulk operations (mark multiple as sold)
+- [ ] **Settings Tab** (`src/settings/settingsTab.ts`)
+  - AI Provider selection (Anthropic, OpenAI, etc.)
+  - API key input per provider
+  - Model selection per provider
+  - Theme/appearance settings
+  - Tax threshold configuration (default: 1.000€/Jahr)
+- [ ] **AI Description Generation** — "Beschreibung generieren" button in New Item Modal
+  - Provider-agnostic abstraction layer (`src/services/aiService.ts`)
+  - Supported providers:
+    - Anthropic (Claude Haiku 4.5 — ~0,001€ pro Beschreibung)
+    - OpenAI (GPT-4o-mini)
+    - Weitere einfach hinzufügbar
+  - Input: Artikelname, Zustand, Kategorie, optional Template-Infos
+  - Output: Kleinanzeigen-ready Beschreibung mit Haftungsausschluss
+  - User can edit generated text before saving
+
+### Phase 5 — Templates & Archiv
+
+Streamlined workflows for repeat sellers and completed items.
+
+- [ ] **Artikel-Templates** (`src/services/templateService.ts`)
+  - Template erstellen aus: Zustand, Porto, Preisart, Kategorie, Beschreibungsvorlage
+  - Anwendungsfall: z.B. "PS4 Spiel" Template — gleicher Zustand, gleiches Porto, nur Titel ändern
+  - Template-Verwaltung in Settings (erstellen, bearbeiten, löschen)
+  - "Aus Template erstellen" Option im New Item Modal
+- [ ] **Archiv-System**
+  - Neuer Status: `Archiviert` (nach Abgeschlossen)
+  - Archivieren-Button für abgeschlossene Artikel
+  - Archivierte Artikel standardmäßig ausgeblendet
+  - Archiv-Toggle in jeder Artikelliste zum Ein-/Ausblenden
+  - Option: Artikel komplett löschen (mit Bestätigung)
+
+### Phase 6 — Bulk-Operationen & Export
+
+Efficient multi-item management and data export.
+
+- [ ] **Bulk-Operationen**
+  - Checkboxen in der Dashboard-Tabelle
+  - "Alle auswählen" / "Keine auswählen"
+  - Verfügbare Bulk-Aktionen (kontextabhängig):
+    - Archivieren (für Abgeschlossene)
+    - Löschen (mit Bestätigung)
+    - Status ändern (z.B. Abgelaufen markieren)
+    - Exportieren (Auswahl)
+- [ ] **CSV-Export**
+  - Alle Artikel oder aktuelle Auswahl/Filter
+  - Konfigurierbare Spalten
+  - Geeignet für Steuerunterlagen
+- [ ] **PDF-Export**
+  - Formatierte Übersicht als PDF
+  - Einzelartikel oder Gesamtliste
+  - Statistiken/Zusammenfassung inkl.
+
+### Phase 7 — Erweiterte Statistiken & Steuerlimit
+
+Better insights and tax compliance awareness.
+
+- [ ] **Erweiterte Statistiken** im Statistik-Tab
+  - Durchschnittliche Verkaufsdauer (Eingestellt → Verkauft)
+  - Durchschnittlicher Verkaufspreis
+  - Versandkosten-Übersicht
+- [ ] **Steuerlimit-Anzeige**
+  - Privatverkäufer-Freigrenze: 1.000€/Jahr (konfigurierbar in Settings)
+  - Fortschrittsbalken im Dashboard: "XXX€ / 1.000€ Freigrenze"
+  - Warnung bei Annäherung (z.B. ab 80%)
+  - Bezieht sich auf Gesamteinnahmen (verkauft_fuer) im Kalenderjahr
+
+### Phase 8 — eBay-Integration (Zukunft)
+
+Extend the plugin to also track eBay listings alongside Kleinanzeigen.
+
+- [ ] **eBay aktivieren** — Toggle in Einstellungen
+  - Aktivierung ändert Tab-Leiste: Übersicht wird plattformübergreifend, separate Kleinanzeigen/eBay Tabs erscheinen
+  - Archiv wird über Filter/Toggle in den Tabs erreichbar (statt eigenem Tab)
+- [ ] `plattform: 'Kleinanzeigen' | 'eBay'` Feld im Listing-Model
+- [ ] eBay-spezifische Felder (Gebühren, Auktions- vs. Sofortkauf, etc.)
+- [ ] Steuerlimit berücksichtigt beide Plattformen zusammen
 
 ---
 
 ## Mögliche zusätzliche Features
 
-- Export to CSV (für Steuern)
-- Templates & Presets (gespeicherte Adressen, Carrier-Defaults)
-- Erinnerungen (Zahlung ausstehend, Versand ausstehend)
-- Best-selling Kategorien
-- Durchschnittliche Verkaufsdauer
-- Versandkosten-Trends
+- Erinnerungen (Zahlung ausstehend, Versand ausstehend) — Obsidian hat keine nativen Push-Notifications, aber in-App `Notice` ist möglich (wird angezeigt wenn Obsidian offen ist)
+- Support für Bundles (mehrere Artikel zusammen verkaufen)
+- Fotos pro Artikel tracken
 
 ---
 
@@ -178,6 +250,38 @@ Advanced features.
 
 ---
 
+## Dashboard Navigation
+
+Ein Ribbon-Icon, ein Dashboard, Tab-basierte Navigation.
+
+### Standard-Tabs (ohne eBay)
+
+```
+[ Übersicht ]  [ Statistiken ]  [ Einstellungen ]
+```
+
+- **Übersicht** — Aktive Artikel-Tabelle mit Filtern, Suche, Aktionen + Archiv-Toggle
+- **Statistiken** — Monats-/Jahresübersicht, Verkaufsdauer, Steuerlimit
+- **Einstellungen** — AI-Provider, API-Keys, Templates, Steuerlimit, eBay aktivieren
+
+### Erweiterte Tabs (eBay aktiviert in Einstellungen)
+
+```
+[ Übersicht ]  [ Kleinanzeigen ]  [ eBay ]  [ Statistiken ]  [ Einstellungen ]
+```
+
+- **Übersicht** — Alle Artikel plattformübergreifend (Kleinanzeigen + eBay zusammen)
+- **Kleinanzeigen** — Nur Kleinanzeigen-Artikel
+- **eBay** — Nur eBay-Artikel
+- **Statistiken** — Plattform-Filter, kombiniertes Steuerlimit
+- **Einstellungen** — wie oben
+
+### Archiv-Toggle
+
+Archiv ist kein eigener Tab, sondern ein Toggle/Checkbox in jeder Artikelliste (Übersicht, Kleinanzeigen, eBay). Standardmäßig aus — zeigt nur aktive/laufende Artikel. Eingeschaltet zeigt archivierte Artikel (mit Löschen-Option).
+
+---
+
 ## UI Design Principles
 
 1. **One-Click Actions** — Common tasks in 1–2 clicks max
@@ -192,17 +296,17 @@ Advanced features.
 ## Open Questions
 
 - Track multiple photos per item?
-- Buyer rating/feedback system?
-- Bulk operations (mark multiple as sold)?
-- Integration with inventory management?
 - Support for bundles (selling multiple items together)?
-- Tax calculation helpers?
+- Support for bundles (selling multiple items together)?
 
 ---
 
 ## Notes
 
-- Storage: Individual MD notes with YAML frontmatter (Option 1 from concept) — easier to implement, searchable, integrates with Obsidian linking
+- Storage: Individual MD notes with YAML frontmatter — easier to implement, searchable, integrates with Obsidian linking
 - No moment.js — native Date API is sufficient
 - Build system: esbuild (same as obsidian-sample-plugin)
 - Dev workflow: Symlink repo into vault + Hot Reload plugin for live updates
+- Reminders: Obsidian hat keine System-Notifications, aber `new Notice()` zeigt In-App-Meldungen (nur sichtbar wenn Obsidian offen ist)
+- Shipping label generation & auto-tracking: Nicht umsetzbar — DHL/Hermes APIs erfordern Geschäftskundenvertrag
+- PDF Export: Benötigt eine Bibliothek wie jsPDF (als dependency)
