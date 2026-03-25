@@ -31,6 +31,15 @@ export class VaultService {
     await this.app.vault.modify(file, content);
   }
 
+  async deleteListing(listing: Listing): Promise<void> {
+    if (!listing.filePath) return;
+
+    const file = this.app.vault.getAbstractFileByPath(listing.filePath);
+    if (!(file instanceof TFile)) return;
+
+    await this.app.vault.trash(file, true);
+  }
+
   async getAllListings(): Promise<Listing[]> {
     const listings: Listing[] = [];
 
@@ -69,7 +78,7 @@ export class VaultService {
     // Fallback: if cache isn't ready yet, parse the file content directly
     if (!fm) {
       const content = await this.app.vault.read(file);
-      fm = this.parseFrontmatter(content);
+      fm = this.parseFrontmatter(content) as any;
     }
 
     if (!fm) return null;

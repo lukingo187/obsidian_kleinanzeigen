@@ -369,3 +369,456 @@
   color: #f44336;
   font-weight: 600;
 }
+
+/* Settings tab */
+.ka-settings {
+  max-width: 600px;
+}
+
+.ka-settings-section {
+  margin-bottom: 24px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.ka-settings-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ka-setting-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.ka-setting-item label {
+  min-width: 120px;
+  font-size: 0.9em;
+  color: var(--text-normal);
+}
+
+.ka-setting-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 0.9em;
+}
+
+.ka-setting-input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+.ka-setting-select {
+  flex: 1;
+  padding: 6px 30px 6px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 0.9em;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+
+.ka-setting-select:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+.ka-setting-item-vertical {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.ka-setting-item-vertical label {
+  min-width: unset;
+  margin-bottom: 6px;
+}
+
+.ka-setting-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 0.9em;
+  resize: vertical;
+}
+
+.ka-setting-textarea:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+.ka-key-toggle {
+  cursor: pointer;
+  padding: 4px 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: none;
+  font-size: 0.85em;
+}
+
+.ka-key-toggle:hover {
+  background: var(--background-modifier-hover);
+}
+
+.ka-setting-hint {
+  font-size: 0.8em;
+  color: var(--text-muted);
+  margin-top: 4px;
+  padding-left: 2px;
+}
+
+.ka-setting-toggle {
+  justify-content: space-between;
+}
+
+.ka-toggle {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.ka-test-btn {
+  cursor: pointer;
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 0.85em;
+}
+
+.ka-test-btn:hover {
+  background: var(--background-modifier-hover);
+}
+
+.ka-test-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ka-test-result {
+  font-size: 0.85em;
+  margin-left: 8px;
+}
+
+.ka-test-ok {
+  color: #4caf50;
+}
+
+.ka-test-fail {
+  color: #f44336;
+}
+
+/* AI freeform section in modal */
+.ka-ai-section {
+  margin-bottom: 8px;
+}
+
+.ka-ai-hint {
+  font-size: 0.85em;
+  color: var(--text-muted);
+  margin: 0 0 8px 0;
+}
+
+.ka-freeform-input {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.ka-ai-btn-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ka-ai-fill-btn {
+  cursor: pointer;
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: none;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+.ka-ai-fill-btn:hover {
+  opacity: 0.9;
+}
+
+.ka-ai-fill-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ka-divider {
+  border: none;
+  border-top: 1px solid var(--background-modifier-border);
+  margin: 12px 0;
+}
+
+/* Usage cards */
+.ka-usage-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ka-usage-card {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  min-width: 100px;
+  text-align: center;
+}
+
+.ka-usage-value {
+  font-size: 1.2em;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.ka-usage-label {
+  font-size: 0.8em;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Bigger article input in modal */
+.ka-modal .setting-item:first-of-type input[type="text"] {
+  font-size: 1.1em;
+  padding: 8px 12px;
+}
+
+.ka-ai-no-key {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  font-size: 0.85em;
+}
+
+/* Archive toggle */
+.ka-controls-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ka-controls-row .ka-filters {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.ka-archive-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.ka-archive-btn {
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  color: var(--text-muted);
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.ka-archive-btn:hover {
+  background: var(--background-modifier-hover);
+}
+
+.ka-archive-btn-active {
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  border-color: var(--text-muted);
+}
+
+.ka-status-archiviert {
+  background: rgba(120, 120, 120, 0.12);
+  color: #888;
+}
+
+.ka-archive-action-btn { border-color: #888; color: #888; }
+.ka-archive-action-btn:hover { background: rgba(120, 120, 120, 0.12); }
+
+.ka-delete-btn { border-color: #f44336; color: #f44336; }
+.ka-delete-btn:hover { background: rgba(244, 67, 54, 0.1); }
+
+/* Tax limit progress bar */
+.ka-tax-bar-wrap {
+  background: var(--background-secondary);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.ka-tax-warning {
+  border: 1px solid #ffc107;
+}
+
+.ka-tax-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.ka-tax-title {
+  font-weight: 600;
+  font-size: 0.95em;
+}
+
+.ka-tax-amount {
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+.ka-tax-bar {
+  width: 100%;
+  height: 10px;
+  background: var(--background-modifier-border);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.ka-tax-fill {
+  height: 100%;
+  background: #4caf50;
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+
+.ka-tax-near {
+  background: #ffc107;
+}
+
+.ka-tax-exceeded {
+  background: #f44336;
+}
+
+.ka-tax-hint {
+  font-size: 0.8em;
+  color: var(--text-muted);
+}
+
+.ka-tax-hint-warn {
+  color: #ffc107;
+  font-weight: 500;
+}
+
+.ka-tax-hint-danger {
+  color: #f44336;
+  font-weight: 600;
+}
+
+/* Extended stats */
+.ka-ext-stats {
+  margin-top: 0;
+}
+
+/* Template settings */
+.ka-template-list {
+  margin-bottom: 12px;
+}
+
+.ka-template-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.ka-template-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ka-template-name {
+  font-weight: 500;
+  font-size: 0.95em;
+}
+
+.ka-template-meta {
+  font-size: 0.8em;
+  color: var(--text-muted);
+}
+
+.ka-template-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.ka-template-form {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 14px;
+  margin-top: 8px;
+}
+
+.ka-template-form h4 {
+  margin: 0 0 12px 0;
+  font-size: 0.95em;
+}
+
+.ka-template-form-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Template section in modal */
+.ka-template-section {
+  margin-bottom: 8px;
+}
+
+.ka-template-select-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ka-template-select-row .ka-setting-select {
+  flex: 1;
+}
+
+/* Reset btn */
+.ka-reset-btn {
+  margin-top: 8px;
+  border-color: #f44336 !important;
+  color: #f44336 !important;
+}
+
+.ka-reset-btn:hover {
+  background: rgba(244, 67, 54, 0.1) !important;
+}

@@ -131,37 +131,36 @@ Insights and data portability.
 
 Plugin settings tab and AI-powered description generation.
 
-- [ ] **Settings Tab** (`src/settings/settingsTab.ts`)
-  - AI Provider selection (Anthropic, OpenAI, etc.)
-  - API key input per provider
+- [x] **Settings Tab** — eingebettet in Dashboard (`Einstellungen`-Tab)
+  - AI Provider selection (Anthropic, OpenAI)
+  - API key input per provider (mit Sichtbarkeits-Toggle)
   - Model selection per provider
-  - Theme/appearance settings
   - Tax threshold configuration (default: 1.000€/Jahr)
-- [ ] **AI Description Generation** — "Beschreibung generieren" button in New Item Modal
-  - Provider-agnostic abstraction layer (`src/services/aiService.ts`)
-  - Supported providers:
-    - Anthropic (Claude Haiku 4.5 — ~0,001€ pro Beschreibung)
-    - OpenAI (GPT-4o-mini)
-    - Weitere einfach hinzufügbar
-  - Input: Artikelname, Zustand, Kategorie, optional Template-Infos
-  - Output: Kleinanzeigen-ready Beschreibung mit Haftungsausschluss
-  - User can edit generated text before saving
+  - API-Key Test-Button
+  - API-Nutzungsübersicht (Kosten, Aufrufe)
+  - Beschreibungs-Footer (Privatverkauf-Disclaimer)
+  - eBay-Aktivierung (Platzhalter für Phase 8)
+- [x] **AI Description Generation** — Freitext-Eingabe im New Item Modal
+  - Provider-agnostische Abstraktionsschicht (`src/services/aiService.ts`)
+  - Unterstützte Provider: Anthropic (Claude), OpenAI (GPT)
+  - Freitext-Eingabe → KI füllt Felder automatisch aus (Titel, Zustand, Porto, Beschreibung)
+  - Nutzer kann generierten Text vor dem Speichern bearbeiten
 
 ### Phase 5 — Templates & Archiv
 
 Streamlined workflows for repeat sellers and completed items.
 
-- [ ] **Artikel-Templates** (`src/services/templateService.ts`)
-  - Template erstellen aus: Zustand, Porto, Preisart, Kategorie, Beschreibungsvorlage
+- [x] **Artikel-Templates** (`src/services/templateService.ts`)
+  - Template erstellen aus: Zustand, Porto, Preisart, Beschreibungsvorlage
   - Anwendungsfall: z.B. "PS4 Spiel" Template — gleicher Zustand, gleiches Porto, nur Titel ändern
-  - Template-Verwaltung in Settings (erstellen, bearbeiten, löschen)
-  - "Aus Template erstellen" Option im New Item Modal
-- [ ] **Archiv-System**
+  - Template-Verwaltung im Einstellungen-Tab (erstellen, bearbeiten, löschen)
+  - "Aus Template erstellen" Auswahl im New Item Modal (erscheint wenn Templates vorhanden)
+- [x] **Archiv-System**
   - Neuer Status: `Archiviert` (nach Abgeschlossen)
   - Archivieren-Button für abgeschlossene Artikel
   - Archivierte Artikel standardmäßig ausgeblendet
-  - Archiv-Toggle in jeder Artikelliste zum Ein-/Ausblenden
-  - Option: Artikel komplett löschen (mit Bestätigung)
+  - Archiv-Toggle in der Übersicht zum Ein-/Ausblenden
+  - Löschen-Button (mit Bestätigung) für archivierte Artikel
 
 ### Phase 6 — Bulk-Operationen & Export
 
@@ -188,15 +187,15 @@ Efficient multi-item management and data export.
 
 Better insights and tax compliance awareness.
 
-- [ ] **Erweiterte Statistiken** im Statistik-Tab
-  - Durchschnittliche Verkaufsdauer (Eingestellt → Verkauft)
+- [x] **Erweiterte Statistiken** im Statistik-Tab
+  - Durchschnittliche Verkaufsdauer (Eingestellt → Verkauft) in Tagen
   - Durchschnittlicher Verkaufspreis
-  - Versandkosten-Übersicht
-- [ ] **Steuerlimit-Anzeige**
+  - Gesamtportokosten-Übersicht
+- [x] **Steuerlimit-Anzeige**
   - Privatverkäufer-Freigrenze: 1.000€/Jahr (konfigurierbar in Settings)
-  - Fortschrittsbalken im Dashboard: "XXX€ / 1.000€ Freigrenze"
-  - Warnung bei Annäherung (z.B. ab 80%)
-  - Bezieht sich auf Gesamteinnahmen (verkauft_fuer) im Kalenderjahr
+  - Fortschrittsbalken im Statistik-Tab: "XXX€ / 1.000€ Freigrenze"
+  - Warnung ab 80% (gelb), Überschreitung rot hervorgehoben
+  - Bezieht sich auf Gesamteinnahmen (verkauft_fuer) im laufenden Kalenderjahr
 
 ### Phase 8 — eBay-Integration (Zukunft)
 

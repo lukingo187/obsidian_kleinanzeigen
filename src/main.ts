@@ -6,17 +6,20 @@ import { EditListingModal } from './modals/editListingModal';
 import { SoldModal } from './modals/soldModal';
 import { ShipModal } from './modals/shipModal';
 import { RelistModal } from './modals/relistModal';
-import { Listing } from './models/listing';
+import { Listing, PluginSettings, DEFAULT_SETTINGS, AIProvider } from './models/listing';
+import { AIService } from './services/aiService';
 
 export default class KleinanzeigenPlugin extends Plugin {
   private vaultService!: VaultService;
+  settings!: PluginSettings;
 
   async onload() {
+    await this.loadSettings();
     this.vaultService = new VaultService(this.app);
 
     this.registerView(
       DASHBOARD_VIEW_TYPE,
-      (leaf) => new DashboardView(leaf, this.vaultService, {
+      (leaf) => new DashboardView(leaf, this.vaultService, this, {
         onSold: (listing) => this.openSoldModal(listing),
         onShip: (listing) => this.openShipModal(listing),
         onRelist: (listing) => this.openRelistModal(listing),
@@ -63,7 +66,7 @@ export default class KleinanzeigenPlugin extends Plugin {
   }
 
   private openNewItemModal() {
-    new NewItemModal(this.app, async (listing: Listing) => {
+    new NewItemModal(this.app, this, async (listing: Listing) => {
       await this.vaultService.createListing(listing);
       this.refreshDashboard();
     }).open();
@@ -107,5 +110,40 @@ export default class KleinanzeigenPlugin extends Plugin {
         }
       }
     }, 200);
+  }
+
+  async loadSettings() {
+    const saved = await this.loadData();
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, saved);
+    // Ensure nested objects are merged properly
+    this.settings.aiProviders = Object.assign(
+      {},
+      DEFAULT_SETTINGS.aiProviders,
+      this.settings.aiProviders,
+    );
+    this.settings.aiUsage = Object.assign(
+      {},
+      DEFAULT_SETTINGS.aiUsage,
+      this.settings.aiUsage,
+    );
+    // Ensure arrays are preserved (not overwritten by Object.assign)
+    if (!Array.isArray(this.settings.templates)) {
+      this.settings.templates = [];
+    }
+  }
+
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
+
+  createAIService(): AIService {
+    return new AIService(this.settings, (provider, model, inputTokens, outputTokens) => {
+      const usage = this.settings.aiUsage[provider];
+      usage.totalInputTokens += inputTokens;
+      usage.totalOutputTokens += outputTokens;
+      usage.totalCostUSD += AIService.calculateCost(model, inputTokens, outputTokens);
+      usage.callCount += 1;
+      this.saveSettings();
+    });
   }
 }
