@@ -22,13 +22,14 @@
 
 .ka-new-btn {
   cursor: pointer;
-  padding: 6px 14px;
-  border-radius: 6px;
+  padding: 6px 16px;
+  border-radius: 16px;
   border: none;
   background: var(--interactive-accent);
   color: var(--text-on-accent);
   font-weight: 600;
   font-size: 0.9em;
+  transition: opacity 100ms ease;
 }
 
 .ka-new-btn:hover {
@@ -37,16 +38,24 @@
 
 .ka-refresh-btn {
   cursor: pointer;
-  font-size: 18px;
   background: none;
   border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  padding: 4px 10px;
-  color: var(--text-normal);
+  border-radius: 8px;
+  padding: 6px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 100ms ease, color 100ms ease;
 }
 
 .ka-refresh-btn:hover {
-  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.ka-refresh-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* Stats cards (overview) */
@@ -55,6 +64,11 @@
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 16px;
+}
+
+.ka-stats .ka-stat-card {
+  flex: 1 1 0;
+  min-width: 100px;
 }
 
 /* Stats grid (stats tab — fixed 4-column layout) */
@@ -68,9 +82,15 @@
 .ka-stat-card {
   background: var(--background-secondary);
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 14px 16px;
   min-width: 0;
   text-align: center;
+  border: 1px solid transparent;
+  transition: border-color 150ms ease;
+}
+
+.ka-stat-card:hover {
+  border-color: var(--background-modifier-border);
 }
 
 .ka-stat-value {
@@ -103,6 +123,7 @@
   color: var(--text-muted);
   font-size: 0.95em;
   font-weight: 500;
+  transition: color 100ms ease, border-color 100ms ease;
 }
 
 .ka-tab-btn:hover {
@@ -130,6 +151,7 @@
   background: var(--background-primary);
   color: var(--text-normal);
   font-size: 0.9em;
+  transition: background 100ms ease, border-color 100ms ease, color 100ms ease;
 }
 
 .ka-filter-btn:hover {
@@ -146,6 +168,90 @@
   flex: 1;
 }
 
+/* Export dropdown */
+.ka-export-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.ka-export-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ka-export-dropdown {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  min-width: 180px;
+  padding: 6px;
+  opacity: 0;
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.ka-export-dropdown::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  margin-left: -6px;
+  width: 12px;
+  height: 12px;
+  background: var(--background-secondary);
+  border-right: 1px solid var(--background-modifier-border);
+  border-bottom: 1px solid var(--background-modifier-border);
+  transform: rotate(45deg);
+}
+
+.ka-export-dropdown-open {
+  display: flex;
+  flex-direction: column;
+}
+
+.ka-export-dropdown-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.ka-export-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  white-space: nowrap;
+  width: 100%;
+  transition: background 100ms ease;
+}
+
+.ka-export-dropdown-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.ka-export-dropdown-icon {
+  display: flex;
+  color: var(--text-muted);
+}
+
+.ka-export-dropdown-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* Search */
 .ka-search {
   margin-bottom: 16px;
@@ -154,17 +260,52 @@
 .ka-search-input {
   width: 100%;
   max-width: 400px;
-  padding: 6px 12px;
+  padding: 8px 14px;
   border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--background-primary);
   color: var(--text-normal);
   font-size: 0.9em;
+  transition: border-color 150ms ease;
 }
 
 .ka-search-input:focus {
   border-color: var(--interactive-accent);
   outline: none;
+}
+
+/* Bulk action bar */
+.ka-bulk-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--interactive-accent);
+}
+
+.ka-bulk-bar > span {
+  font-weight: 500;
+  font-size: 0.9em;
+}
+
+.ka-bulk-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.ka-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.ka-table th:first-child,
+.ka-table td:first-child {
+  width: 32px;
+  text-align: center;
 }
 
 /* Table */
@@ -183,10 +324,33 @@
   white-space: nowrap;
 }
 
+.ka-th-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.ka-th-sortable:hover {
+  color: var(--text-normal);
+}
+
+.ka-sort-indicator {
+  font-size: 0.7em;
+  margin-left: 4px;
+  color: var(--text-faint);
+}
+
+.ka-sort-active {
+  color: var(--text-normal);
+}
+
 .ka-table td {
   padding: 8px;
   border-bottom: 1px solid var(--background-modifier-border);
   vertical-align: middle;
+}
+
+.ka-table tbody tr:nth-child(even) {
+  background: var(--background-secondary);
 }
 
 .ka-row {
@@ -211,6 +375,7 @@
 .ka-status-verschickt { background: rgba(33, 150, 243, 0.15); color: #2196f3; }
 .ka-status-abgeschlossen { background: rgba(76, 175, 80, 0.15); color: #4caf50; }
 .ka-status-abgelaufen { background: rgba(158, 158, 158, 0.15); color: #9e9e9e; }
+.ka-status-archiviert { background: rgba(120, 120, 120, 0.12); color: #888; }
 
 /* Action buttons */
 .ka-actions {
@@ -220,12 +385,13 @@
 .ka-action-btn {
   cursor: pointer;
   padding: 3px 10px;
-  border-radius: 4px;
+  border-radius: 16px;
   border: 1px solid var(--background-modifier-border);
   background: var(--background-primary);
   color: var(--text-normal);
   font-size: 0.85em;
   margin-right: 4px;
+  transition: background 100ms ease;
 }
 
 .ka-action-btn:hover {
@@ -247,6 +413,15 @@
 .ka-expired-btn { border-color: #9e9e9e; color: #9e9e9e; }
 .ka-expired-btn:hover { background: rgba(158, 158, 158, 0.15); }
 
+.ka-archive-action-btn { border-color: #888; color: #888; }
+.ka-archive-action-btn:hover { background: rgba(120, 120, 120, 0.12); }
+
+.ka-delete-btn { border-color: #f44336; color: #f44336; }
+.ka-delete-btn:hover { background: rgba(244, 67, 54, 0.1); }
+
+.ka-undo-btn { border-color: var(--text-muted); color: var(--text-muted); }
+.ka-undo-btn:hover { background: var(--background-modifier-hover); }
+
 /* Empty state */
 .ka-empty {
   text-align: center;
@@ -258,13 +433,14 @@
 /* Detail view */
 .ka-back-btn {
   cursor: pointer;
-  padding: 4px 12px;
-  border-radius: 4px;
+  padding: 4px 14px;
+  border-radius: 8px;
   border: 1px solid var(--background-modifier-border);
   background: var(--background-primary);
   color: var(--text-normal);
   font-size: 0.85em;
   margin-bottom: 16px;
+  transition: background 100ms ease;
 }
 
 .ka-back-btn:hover {
@@ -312,17 +488,27 @@
 
 .ka-section-edit-btn {
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
+  padding: 4px;
+  border-radius: 8px;
   border: none;
   background: none;
   font-size: 0.85em;
   line-height: 1;
   opacity: 0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: opacity 100ms ease;
 }
 
 .ka-section-edit-btn:hover {
   opacity: 1;
+}
+
+.ka-section-edit-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .ka-detail-row {
@@ -353,7 +539,7 @@
 .ka-desc-box {
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 12px;
   font-size: 0.9em;
   white-space: pre-wrap;
@@ -363,11 +549,54 @@
 /* Modal tweaks */
 .ka-modal .setting-item {
   border-top: none;
+  padding: 12px 0;
+}
+
+.ka-modal .setting-item-info {
+  padding-right: 16px;
+}
+
+.ka-modal .setting-item-control input[type="text"],
+.ka-modal .setting-item-control input[type="number"] {
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: border-color 150ms ease;
+}
+
+.ka-modal .setting-item-control select {
+  border-radius: 8px;
+  line-height: 1.4;
+}
+
+.ka-modal .setting-item-control textarea {
+  border-radius: 8px;
+}
+
+.ka-modal button.mod-cta {
+  border-radius: 16px;
+  padding: 8px 20px;
+  font-weight: 600;
+}
+
+.ka-modal button:not(.mod-cta):not(.ka-ai-fill-btn):not(.ka-key-toggle) {
+  border-radius: 16px;
 }
 
 .ka-textarea {
   width: 100%;
   resize: vertical;
+  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 0.9em;
+  transition: border-color 150ms ease;
+}
+
+.ka-textarea:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
 }
 
 /* Stats view */
@@ -387,45 +616,56 @@
 
 /* Settings tab */
 .ka-settings {
-  max-width: 600px;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 8px 0;
 }
 
 .ka-settings-section {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   background: var(--background-secondary);
-  border-radius: 8px;
-  padding: 16px;
+  border-radius: 12px;
+  padding: 20px 24px;
+  border: 1px solid var(--background-modifier-border);
 }
 
 .ka-settings-section h3 {
-  margin: 0 0 12px 0;
-  font-size: 1em;
+  margin: 0 0 4px 0;
+  font-size: 1.05em;
+  color: var(--text-normal);
+  font-weight: 600;
+}
+
+.ka-settings-section-desc {
+  font-size: 0.85em;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  margin-bottom: 16px;
+  line-height: 1.4;
 }
 
 .ka-setting-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .ka-setting-item label {
-  min-width: 120px;
+  min-width: 140px;
   font-size: 0.9em;
   color: var(--text-normal);
+  font-weight: 500;
 }
 
 .ka-setting-input {
   flex: 1;
-  padding: 6px 10px;
+  padding: 8px 12px;
   border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--background-primary);
   color: var(--text-normal);
   font-size: 0.9em;
+  transition: border-color 150ms ease;
 }
 
 .ka-setting-input:focus {
@@ -435,18 +675,20 @@
 
 .ka-setting-select {
   flex: 1;
-  padding: 6px 30px 6px 10px;
+  padding: 6px 30px 6px 12px;
   border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--background-primary);
   color: var(--text-normal);
   font-size: 0.9em;
+  line-height: 1.4;
   appearance: none;
   -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
   cursor: pointer;
+  transition: border-color 150ms ease;
 }
 
 .ka-setting-select:focus {
@@ -466,13 +708,14 @@
 
 .ka-setting-textarea {
   width: 100%;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--background-primary);
   color: var(--text-normal);
   font-size: 0.9em;
   resize: vertical;
+  transition: border-color 150ms ease;
 }
 
 .ka-setting-textarea:focus {
@@ -482,15 +725,27 @@
 
 .ka-key-toggle {
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 6px;
   border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  background: none;
-  font-size: 0.85em;
+  border-radius: 8px;
+  background: var(--background-primary);
+  color: var(--text-muted);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 100ms ease, border-color 100ms ease;
 }
 
 .ka-key-toggle:hover {
   background: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+}
+
+.ka-key-toggle svg {
+  width: 16px;
+  height: 16px;
 }
 
 .ka-setting-hint {
@@ -504,20 +759,56 @@
   justify-content: space-between;
 }
 
-.ka-toggle {
+/* Toggle switch */
+.ka-toggle-switch {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--background-modifier-border);
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 200ms ease;
+}
+
+.ka-toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
   width: 18px;
   height: 18px;
-  cursor: pointer;
+  border-radius: 50%;
+  background: white;
+  transition: transform 200ms ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.ka-toggle-switch.is-active {
+  background: var(--interactive-accent);
+}
+
+.ka-toggle-switch.is-active::after {
+  transform: translateX(18px);
+}
+
+.ka-toggle-switch:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .ka-test-btn {
   cursor: pointer;
-  padding: 5px 14px;
-  border-radius: 6px;
+  padding: 6px 16px;
+  border-radius: 16px;
   border: 1px solid var(--background-modifier-border);
   background: var(--background-primary);
   color: var(--text-normal);
   font-size: 0.85em;
+  font-weight: 500;
+  transition: background 100ms ease;
 }
 
 .ka-test-btn:hover {
@@ -556,6 +847,8 @@
 .ka-freeform-input {
   width: 100%;
   margin-bottom: 8px;
+  border-radius: 8px;
+  padding: 10px 12px;
 }
 
 .ka-ai-btn-row {
@@ -566,7 +859,7 @@
 .ka-ai-fill-btn {
   cursor: pointer;
   padding: 6px 16px;
-  border-radius: 6px;
+  border-radius: 16px;
   border: none;
   background: var(--interactive-accent);
   color: var(--text-on-accent);
@@ -586,7 +879,7 @@
 .ka-divider {
   border: none;
   border-top: 1px solid var(--background-modifier-border);
-  margin: 12px 0;
+  margin: 16px 0;
 }
 
 /* Usage cards */
@@ -599,9 +892,9 @@
 .ka-usage-card {
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  padding: 10px 14px;
-  min-width: 100px;
+  border-radius: 8px;
+  padding: 12px 16px;
+  min-width: 110px;
   text-align: center;
 }
 
@@ -622,26 +915,16 @@
   font-size: 1.2em !important;
   padding: 10px 14px !important;
   width: 100% !important;
+  border-radius: 8px !important;
 }
 
 .ka-ai-no-key {
   padding: 10px 12px;
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--background-secondary);
   color: var(--text-muted);
   font-size: 0.85em;
 }
-
-.ka-status-archiviert {
-  background: rgba(120, 120, 120, 0.12);
-  color: #888;
-}
-
-.ka-archive-action-btn { border-color: #888; color: #888; }
-.ka-archive-action-btn:hover { background: rgba(120, 120, 120, 0.12); }
-
-.ka-delete-btn { border-color: #f44336; color: #f44336; }
-.ka-delete-btn:hover { background: rgba(244, 67, 54, 0.1); }
 
 /* Template settings */
 .ka-template-list {
@@ -652,11 +935,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 10px;
+  padding: 10px 14px;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  margin-bottom: 6px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: border-color 100ms ease;
+}
+
+.ka-template-row:hover {
+  border-color: var(--interactive-accent);
 }
 
 .ka-template-info {
@@ -683,9 +971,9 @@
 .ka-template-form {
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  padding: 14px;
-  margin-top: 8px;
+  border-radius: 12px;
+  padding: 18px;
+  margin-top: 12px;
 }
 
 .ka-template-form h4 {
@@ -715,12 +1003,13 @@
 }
 
 /* Reset btn */
-.ka-reset-btn {
-  margin-top: 8px;
-  border-color: #f44336 !important;
-  color: #f44336 !important;
+.ka-settings-section .ka-reset-btn {
+  margin-top: 12px;
+  border-color: #f44336;
+  color: #f44336;
+  border-radius: 16px;
 }
 
-.ka-reset-btn:hover {
-  background: rgba(244, 67, 54, 0.1) !important;
+.ka-settings-section .ka-reset-btn:hover {
+  background: rgba(244, 67, 54, 0.1);
 }

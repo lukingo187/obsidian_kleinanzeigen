@@ -1,10 +1,11 @@
-import { ItemView, Notice, WorkspaceLeaf } from 'obsidian';
+import { ItemView, Notice, WorkspaceLeaf, setIcon } from 'obsidian';
 import { Listing, Status, AIProvider, DEFAULT_MODELS, ArticleTemplate, ZUSTAND_OPTIONS, Zustand, PORTO_OPTIONS, PortoOption, Preisart } from '../models/listing';
 import { VaultService } from '../services/vaultService';
 import { AIService } from '../services/aiService';
 import { calculateStats, calculateMonthlyStats, calculateYearlyStats, calculateExtendedStats } from '../services/statsService';
 import { formatCurrency, formatDateDE, parsePortoPrice } from '../utils/formatting';
 import { TemplateService } from '../services/templateService';
+import { ExportService } from '../services/exportService';
 import type KleinanzeigenPlugin from '../main';
 
 export const DASHBOARD_VIEW_TYPE = 'kleinanzeigen-dashboard';
@@ -31,6 +32,9 @@ export class DashboardView extends ItemView {
   private expandedListing: Listing | null = null;
   private activeTab: Tab = 'overview';
   private statsPeriod: StatsPeriod = 'monthly';
+  private sortColumn: 'artikel' | 'preis' | 'versand' | 'eingestellt' | 'status' = 'eingestellt';
+  private sortDirection: 'asc' | 'desc' = 'desc';
+  private selectedPaths: Set<string> = new Set();
   private editingTemplate: ArticleTemplate | null = null;
 
   constructor(
@@ -54,11 +58,15 @@ export class DashboardView extends ItemView {
   }
 
   async refresh() {
+    const expandedPath = this.expandedListing?.filePath;
     try {
       this.listings = await this.vaultService.getAllListings();
     } catch (e) {
       console.error('[Kleinanzeigen]', e);
       this.listings = [];
+    }
+    if (expandedPath) {
+      this.expandedListing = this.listings.find(l => l.filePath === expandedPath) ?? null;
     }
     this.render();
   }
@@ -90,7 +98,8 @@ export class DashboardView extends ItemView {
     const newBtn = btns.createEl('button', { text: '+ Neuer Artikel', cls: 'ka-new-btn' });
     newBtn.addEventListener('click', () => this.callbacks.onNewItem());
 
-    const refreshBtn = btns.createEl('button', { text: '↻', cls: 'ka-refresh-btn', attr: { 'aria-label': 'Aktualisieren' } });
+    const refreshBtn = btns.createEl('button', { cls: 'ka-refresh-btn', attr: { 'aria-label': 'Aktualisieren' } });
+    setIcon(refreshBtn, 'refresh-cw');
     refreshBtn.addEventListener('click', () => this.refresh());
   }
 
@@ -109,6 +118,7 @@ export class DashboardView extends ItemView {
       });
       btn.addEventListener('click', () => {
         this.activeTab = tab;
+        this.selectedPaths.clear();
         this.render();
       });
     }
@@ -119,16 +129,43 @@ export class DashboardView extends ItemView {
     setTimeout(() => this.refresh(), 200);
   }
 
+  private async undoStatus(listing: Listing, targetStatus: Status) {
+    const updated: Listing = { ...listing, status: targetStatus };
+
+    // Reset sale + payment fields when reverting from Verkauft
+    if (listing.status === 'Verkauft') {
+      updated.verkauft = false;
+      updated.verkauft_am = undefined;
+      updated.verkauft_fuer = undefined;
+      updated.bezahlt = false;
+      updated.bezahlt_am = undefined;
+      updated.bezahlart = undefined;
+    }
+
+    // Reset shipping fields when reverting from Verschickt
+    if (listing.status === 'Verschickt') {
+      updated.verschickt = false;
+      updated.verschickt_am = undefined;
+      updated.anschrift = undefined;
+      updated.sendungsnummer = undefined;
+      updated.label_erstellt = false;
+    }
+
+    await this.vaultService.updateListing(updated);
+    setTimeout(() => this.refresh(), 200);
+  }
+
   // ── Overview Tab ──
 
   private renderOverview(root: HTMLElement) {
     this.renderSummaryStats(root);
-    this.renderFilters(root);
-    this.renderSearch(root);
 
     if (this.expandedListing) {
       this.renderDetail(root, this.expandedListing);
     } else {
+      this.renderFilters(root);
+      this.renderSearch(root);
+      this.renderBulkBar(root);
       this.renderTable(root);
     }
   }
@@ -165,6 +202,7 @@ export class DashboardView extends ItemView {
       btn.addEventListener('click', () => {
         this.filter = opt;
         this.expandedListing = null;
+        this.selectedPaths.clear();
         this.render();
       });
     }
@@ -177,6 +215,7 @@ export class DashboardView extends ItemView {
     archivBtn.addEventListener('click', () => {
       this.filter = 'Archiv';
       this.expandedListing = null;
+      this.selectedPaths.clear();
       this.render();
     });
   }
@@ -192,6 +231,7 @@ export class DashboardView extends ItemView {
     input.addEventListener('input', (e) => {
       this.searchQuery = (e.target as HTMLInputElement).value;
       this.expandedListing = null;
+      this.selectedPaths.clear();
       this.renderTableOnly();
     });
   }
@@ -200,8 +240,10 @@ export class DashboardView extends ItemView {
     const dashboard = this.containerEl.children[1].querySelector('.ka-dashboard');
     if (!dashboard) return;
 
+    dashboard.querySelector('.ka-bulk-bar')?.remove();
     dashboard.querySelector('.ka-table')?.remove();
     dashboard.querySelector('.ka-empty')?.remove();
+    this.renderBulkBar(dashboard as HTMLElement);
     this.renderTable(dashboard as HTMLElement);
   }
 
@@ -224,7 +266,112 @@ export class DashboardView extends ItemView {
       );
     }
 
-    return filtered;
+    return this.sortListings(filtered);
+  }
+
+  private sortListings(listings: Listing[]): Listing[] {
+    const dir = this.sortDirection === 'asc' ? 1 : -1;
+    return [...listings].sort((a, b) => {
+      let cmp = 0;
+      switch (this.sortColumn) {
+        case 'artikel':
+          cmp = a.artikel.localeCompare(b.artikel, 'de');
+          break;
+        case 'preis':
+          cmp = a.preis - b.preis;
+          break;
+        case 'versand':
+          cmp = parsePortoPrice(a.porto ?? '') - parsePortoPrice(b.porto ?? '');
+          break;
+        case 'eingestellt':
+          cmp = (a.eingestellt_am ?? '').localeCompare(b.eingestellt_am ?? '');
+          break;
+        case 'status':
+          cmp = a.status.localeCompare(b.status, 'de');
+          break;
+      }
+      return cmp * dir;
+    });
+  }
+
+  private renderBulkBar(root: HTMLElement) {
+    if (this.selectedPaths.size === 0) return;
+
+    const filtered = this.getFilteredListings();
+    const selected = filtered.filter(l => l.filePath && this.selectedPaths.has(l.filePath));
+    if (selected.length === 0) return;
+
+    const bar = root.createDiv({ cls: 'ka-bulk-bar' });
+    bar.createSpan({ text: `${selected.length} Artikel ausgewählt` });
+
+    const actions = bar.createDiv({ cls: 'ka-bulk-actions' });
+
+    if (selected.every(l => l.status === 'Abgeschlossen')) {
+      const btn = actions.createEl('button', { text: 'Archivieren', cls: 'ka-action-btn ka-archive-action-btn' });
+      btn.addEventListener('click', async () => {
+        for (const l of selected) await this.vaultService.updateListing({ ...l, status: 'Archiviert' });
+        this.selectedPaths.clear();
+        setTimeout(() => this.refresh(), 200);
+      });
+    }
+
+    if (selected.every(l => l.status === 'Aktiv')) {
+      const btn = actions.createEl('button', { text: 'Abgelaufen', cls: 'ka-action-btn ka-expired-btn' });
+      btn.addEventListener('click', async () => {
+        for (const l of selected) await this.vaultService.updateListing({ ...l, status: 'Abgelaufen' });
+        this.selectedPaths.clear();
+        setTimeout(() => this.refresh(), 200);
+      });
+    }
+
+    if (selected.every(l => l.status === 'Archiviert')) {
+      const btn = actions.createEl('button', { text: 'Löschen', cls: 'ka-action-btn ka-delete-btn' });
+      btn.addEventListener('click', async () => {
+        if (!confirm(`${selected.length} Artikel wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) return;
+        for (const l of selected) await this.vaultService.deleteListing(l);
+        this.selectedPaths.clear();
+        setTimeout(() => this.refresh(), 200);
+      });
+    }
+
+    const exportWrapper = actions.createDiv({ cls: 'ka-export-wrapper' });
+    const exportBtn = exportWrapper.createEl('button', { cls: 'ka-action-btn ka-export-btn' });
+    setIcon(exportBtn.createSpan(), 'share');
+    exportBtn.createSpan({ text: ' Exportieren' });
+
+    const dropdown = exportWrapper.createDiv({ cls: 'ka-export-dropdown' });
+    const csvOption = dropdown.createEl('button', { cls: 'ka-export-dropdown-item' });
+    setIcon(csvOption.createSpan({ cls: 'ka-export-dropdown-icon' }), 'file-spreadsheet');
+    csvOption.createSpan({ text: 'CSV exportieren' });
+    const closeDropdown = () => {
+      dropdown.removeClass('ka-export-dropdown-visible');
+      setTimeout(() => dropdown.removeClass('ka-export-dropdown-open'), 150);
+    };
+
+    csvOption.addEventListener('click', () => {
+      ExportService.exportCSV(selected);
+      closeDropdown();
+    });
+    const pdfOption = dropdown.createEl('button', { cls: 'ka-export-dropdown-item' });
+    setIcon(pdfOption.createSpan({ cls: 'ka-export-dropdown-icon' }), 'file-text');
+    pdfOption.createSpan({ text: 'PDF exportieren' });
+    pdfOption.addEventListener('click', () => {
+      ExportService.exportPDF(selected);
+      closeDropdown();
+    });
+
+    exportBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = dropdown.hasClass('ka-export-dropdown-open');
+      if (!isOpen) {
+        dropdown.addClass('ka-export-dropdown-open');
+        requestAnimationFrame(() => dropdown.addClass('ka-export-dropdown-visible'));
+        const close = () => { closeDropdown(); document.removeEventListener('click', close); };
+        document.addEventListener('click', close);
+      } else {
+        closeDropdown();
+      }
+    });
   }
 
   private renderTable(root: HTMLElement) {
@@ -239,16 +386,63 @@ export class DashboardView extends ItemView {
 
     const thead = table.createEl('thead');
     const headerRow = thead.createEl('tr');
-    for (const col of ['Artikel', 'Zustand', 'Preis', 'Versand', 'Eingestellt', 'Status', 'Aktionen']) {
-      headerRow.createEl('th', { text: col });
+
+    // Select-all checkbox
+    const selectAllTh = headerRow.createEl('th');
+    const selectAllCb = selectAllTh.createEl('input', { type: 'checkbox', cls: 'ka-checkbox' }) as HTMLInputElement;
+    const selectedCount = filtered.filter(l => l.filePath && this.selectedPaths.has(l.filePath)).length;
+    selectAllCb.checked = selectedCount === filtered.length && filtered.length > 0;
+    selectAllCb.indeterminate = selectedCount > 0 && selectedCount < filtered.length;
+    selectAllCb.addEventListener('change', () => {
+      if (selectAllCb.checked) {
+        for (const l of filtered) if (l.filePath) this.selectedPaths.add(l.filePath);
+      } else {
+        for (const l of filtered) if (l.filePath) this.selectedPaths.delete(l.filePath);
+      }
+      this.renderTableOnly();
+    });
+
+    type SortKey = typeof this.sortColumn;
+    const sortableColumns: [string, SortKey][] = [
+      ['Artikel', 'artikel'], ['Preis', 'preis'], ['Versand', 'versand'], ['Eingestellt', 'eingestellt'], ['Status', 'status'],
+    ];
+    for (const [label, key] of sortableColumns) {
+      const th = headerRow.createEl('th', { cls: 'ka-th-sortable' });
+      th.setText(label);
+      if (this.sortColumn === key) {
+        th.createSpan({ cls: 'ka-sort-indicator ka-sort-active', text: this.sortDirection === 'asc' ? ' ▲' : ' ▼' });
+      } else {
+        th.createSpan({ cls: 'ka-sort-indicator', text: ' ▲▼' });
+      }
+      th.addEventListener('click', () => {
+        if (this.sortColumn === key) {
+          this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.sortColumn = key;
+          this.sortDirection = key === 'eingestellt' ? 'desc' : 'asc';
+        }
+        this.renderTableOnly();
+      });
     }
+    headerRow.createEl('th', { text: 'Aktionen' });
 
     const tbody = table.createEl('tbody');
     for (const listing of filtered) {
       const row = tbody.createEl('tr', { cls: 'ka-row' });
 
+      // Row checkbox
+      const cbCell = row.createEl('td');
+      const cb = cbCell.createEl('input', { type: 'checkbox', cls: 'ka-checkbox' }) as HTMLInputElement;
+      cb.checked = !!listing.filePath && this.selectedPaths.has(listing.filePath);
+      cb.addEventListener('click', (e) => e.stopPropagation());
+      cb.addEventListener('change', () => {
+        if (!listing.filePath) return;
+        if (cb.checked) this.selectedPaths.add(listing.filePath);
+        else this.selectedPaths.delete(listing.filePath);
+        this.renderTableOnly();
+      });
+
       row.createEl('td', { text: listing.artikel });
-      row.createEl('td', { text: listing.zustand });
       row.createEl('td', { text: `${formatCurrency(listing.preis)} ${listing.preisart ?? ''}`.trim() });
       row.createEl('td', { text: listing.porto ?? '—' });
       row.createEl('td', { text: listing.eingestellt_am ? formatDateDE(listing.eingestellt_am) : '' });
@@ -261,19 +455,21 @@ export class DashboardView extends ItemView {
       this.renderActions(actionsCell, listing);
 
       row.addEventListener('click', (e) => {
-        if ((e.target as HTMLElement).tagName === 'BUTTON') return;
+        if (['BUTTON', 'INPUT'].includes((e.target as HTMLElement).tagName)) return;
         this.expandedListing = listing;
         this.render();
       });
     }
   }
 
-  private renderActions(cell: HTMLElement, listing: Listing) {
+  private renderActions(cell: HTMLElement, listing: Listing, context: 'table' | 'detail' = 'table') {
     const actionMap: Partial<Record<Status, { label: string; cls: string; handler: () => void }[]>> = {
-      'Aktiv': [
-        { label: 'Verkauft', cls: 'ka-sold-btn', handler: () => this.callbacks.onSold(listing) },
-        { label: 'Abgelaufen', cls: 'ka-expired-btn', handler: () => this.transitionStatus(listing, 'Abgelaufen') },
-      ],
+      'Aktiv': context === 'detail'
+        ? [
+            { label: 'Verkauft', cls: 'ka-sold-btn', handler: () => this.callbacks.onSold(listing) },
+            { label: 'Abgelaufen', cls: 'ka-expired-btn', handler: () => this.transitionStatus(listing, 'Abgelaufen') },
+          ]
+        : [{ label: 'Verkauft', cls: 'ka-sold-btn', handler: () => this.callbacks.onSold(listing) }],
       'Verkauft': [{ label: 'Verschicken', cls: 'ka-ship-btn', handler: () => this.callbacks.onShip(listing) }],
       'Verschickt': [{ label: 'Abschließen', cls: 'ka-complete-btn', handler: () => this.transitionStatus(listing, 'Abgeschlossen') }],
       'Abgeschlossen': [{ label: 'Archivieren', cls: 'ka-archive-action-btn', handler: () => this.transitionStatus(listing, 'Archiviert') }],
@@ -290,7 +486,7 @@ export class DashboardView extends ItemView {
 
     // Delete button for archived items
     if (listing.status === 'Archiviert') {
-      const delBtn = cell.createEl('button', { text: '🗑 Löschen', cls: 'ka-action-btn ka-delete-btn' });
+      const delBtn = cell.createEl('button', { text: 'Löschen', cls: 'ka-action-btn ka-delete-btn' });
       delBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         if (confirm(`"${listing.artikel}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
@@ -301,6 +497,22 @@ export class DashboardView extends ItemView {
           setTimeout(() => this.refresh(), 200);
         }
       });
+    }
+
+    // Undo button in detail view
+    if (context === 'detail') {
+      const prevStatus: Partial<Record<Status, Status>> = {
+        'Verkauft': 'Aktiv',
+        'Verschickt': 'Verkauft',
+        'Abgeschlossen': 'Verschickt',
+        'Abgelaufen': 'Aktiv',
+        'Archiviert': 'Abgeschlossen',
+      };
+      const prev = prevStatus[listing.status];
+      if (prev) {
+        const undoBtn = cell.createEl('button', { text: `← ${prev}`, cls: 'ka-action-btn ka-undo-btn' });
+        undoBtn.addEventListener('click', (e) => { e.stopPropagation(); this.undoStatus(listing, prev); });
+      }
     }
   }
 
@@ -325,7 +537,6 @@ export class DashboardView extends ItemView {
     // Inserat
     const listingSection = grid.createDiv({ cls: 'ka-detail-section' });
     this.addSectionHeader(listingSection, 'Inserat', () => this.callbacks.onEditListing(listing));
-    this.addDetailRow(listingSection, 'Zustand', listing.zustand);
     this.addDetailRow(listingSection, 'Preis', `${formatCurrency(listing.preis)} ${listing.preisart ?? ''}`);
     this.addDetailRow(listingSection, 'Versand', listing.porto ?? '—');
     if (listing.eingestellt_am) {
@@ -335,6 +546,7 @@ export class DashboardView extends ItemView {
       this.addDetailRow(listingSection, 'Erstmals eingestellt', formatDateDE(listing.erstmals_eingestellt_am));
     }
     this.addDetailRow(listingSection, 'Anzahl Einstellungen', listing.eingestellt_count.toString());
+    this.addDetailRow(listingSection, 'Zustand', listing.zustand);
 
     // Verkauf
     if (listing.verkauft) {
@@ -381,7 +593,7 @@ export class DashboardView extends ItemView {
 
     // Aktionen
     const actionsEl = detail.createDiv({ cls: 'ka-detail-actions' });
-    this.renderActions(actionsEl, listing);
+    this.renderActions(actionsEl, listing, 'detail');
   }
 
   // ── Stats Tab ──
@@ -472,7 +684,7 @@ export class DashboardView extends ItemView {
   private renderTemplatesSettings(wrap: HTMLElement, settings: typeof this.plugin.settings) {
     const section = wrap.createDiv({ cls: 'ka-settings-section' });
     section.createEl('h3', { text: 'Artikel-Templates' });
-    section.createDiv({ cls: 'ka-setting-hint', text: 'Templates erleichtern das Anlegen ähnlicher Artikel (z.B. immer gleicher Zustand, Porto, Beschreibungsvorlage).' });
+    section.createDiv({ cls: 'ka-settings-section-desc', text: 'Templates erleichtern das Anlegen ähnlicher Artikel (z.B. immer gleicher Zustand, Porto, Beschreibungsvorlage).' });
 
     // List existing templates
     if (settings.templates.length > 0) {
@@ -492,12 +704,14 @@ export class DashboardView extends ItemView {
         }
 
         const btns = row.createDiv({ cls: 'ka-template-btns' });
-        const editBtn = btns.createEl('button', { text: '✏️', cls: 'ka-section-edit-btn', attr: { 'aria-label': 'Bearbeiten' } });
+        const editBtn = btns.createEl('button', { cls: 'ka-section-edit-btn', attr: { 'aria-label': 'Bearbeiten' } });
+        setIcon(editBtn, 'pencil');
         editBtn.addEventListener('click', () => {
           this.editingTemplate = { ...tpl };
           this.render();
         });
-        const delBtn = btns.createEl('button', { text: '🗑', cls: 'ka-section-edit-btn', attr: { 'aria-label': 'Löschen' } });
+        const delBtn = btns.createEl('button', { cls: 'ka-section-edit-btn', attr: { 'aria-label': 'Löschen' } });
+        setIcon(delBtn, 'trash-2');
         delBtn.addEventListener('click', () => {
           if (confirm(`Template "${tpl.name}" löschen?`)) {
             settings.templates = TemplateService.delete(settings.templates, tpl.id);
@@ -634,6 +848,7 @@ export class DashboardView extends ItemView {
   private renderAISettings(wrap: HTMLElement, settings: typeof this.plugin.settings) {
     const section = wrap.createDiv({ cls: 'ka-settings-section' });
     section.createEl('h3', { text: 'KI-Konfiguration' });
+    section.createDiv({ cls: 'ka-settings-section-desc', text: 'Wähle einen KI-Anbieter und hinterlege deinen API-Key für automatische Beschreibungen.' });
 
     // Anbieter
     this.addSettingRow(section, 'Anbieter', el => {
@@ -679,9 +894,13 @@ export class DashboardView extends ItemView {
         this.plugin.saveSettings();
       });
 
-      const toggleVis = el.createEl('button', { text: '👁', cls: 'ka-key-toggle', attr: { 'aria-label': 'API-Key anzeigen' } });
+      const toggleVis = el.createEl('button', { cls: 'ka-key-toggle', attr: { 'aria-label': 'API-Key anzeigen' } });
+      setIcon(toggleVis, 'eye');
       toggleVis.addEventListener('click', () => {
-        keyInput.type = keyInput.type === 'password' ? 'text' : 'password';
+        const isPassword = keyInput.type === 'password';
+        keyInput.type = isPassword ? 'text' : 'password';
+        toggleVis.empty();
+        setIcon(toggleVis, isPassword ? 'eye-off' : 'eye');
       });
     });
 
@@ -721,6 +940,7 @@ export class DashboardView extends ItemView {
   private renderAIUsage(wrap: HTMLElement, settings: typeof this.plugin.settings) {
     const section = wrap.createDiv({ cls: 'ka-settings-section' });
     section.createEl('h3', { text: 'API-Nutzung' });
+    section.createDiv({ cls: 'ka-settings-section-desc', text: 'Übersicht über deine bisherige API-Nutzung und anfallende Kosten.' });
 
     const anthropicUsage = settings.aiUsage.anthropic;
     const openaiUsage = settings.aiUsage.openai;
@@ -755,6 +975,7 @@ export class DashboardView extends ItemView {
   private renderDescriptionFooter(wrap: HTMLElement, settings: typeof this.plugin.settings) {
     const section = wrap.createDiv({ cls: 'ka-settings-section' });
     section.createEl('h3', { text: 'Beschreibungsvorlage' });
+    section.createDiv({ cls: 'ka-settings-section-desc', text: 'Dieser Text wird automatisch an jede KI-generierte Beschreibung angehängt.' });
 
     const group = section.createDiv({ cls: 'ka-setting-item ka-setting-item-vertical' });
     group.createEl('label', { text: 'Standardtext am Ende jeder Beschreibung' });
@@ -770,19 +991,25 @@ export class DashboardView extends ItemView {
       this.plugin.saveSettings();
     });
 
-    section.createDiv({ cls: 'ka-setting-hint', text: 'Wird automatisch an jede KI-generierte Beschreibung angehängt (z.B. Haftungsausschluss).' });
   }
 
   private renderPlatformSettings(wrap: HTMLElement, settings: typeof this.plugin.settings) {
     const section = wrap.createDiv({ cls: 'ka-settings-section' });
     section.createEl('h3', { text: 'Plattformen' });
+    section.createDiv({ cls: 'ka-settings-section-desc', text: 'Zusätzliche Verkaufsplattformen neben Kleinanzeigen.' });
 
     const group = section.createDiv({ cls: 'ka-setting-item ka-setting-toggle' });
     group.createEl('label', { text: 'eBay aktivieren' });
 
-    const toggle = group.createEl('input', { type: 'checkbox', cls: 'ka-toggle' });
-    toggle.checked = settings.ebayEnabled;
-    toggle.disabled = true;
+    const toggleBtn = group.createEl('button', { cls: 'ka-toggle-switch', attr: { role: 'switch', 'aria-checked': String(settings.ebayEnabled) } });
+    if (settings.ebayEnabled) toggleBtn.addClass('is-active');
+    toggleBtn.disabled = true;
+    toggleBtn.addEventListener('click', () => {
+      settings.ebayEnabled = !settings.ebayEnabled;
+      toggleBtn.toggleClass('is-active', settings.ebayEnabled);
+      toggleBtn.setAttribute('aria-checked', String(settings.ebayEnabled));
+      this.plugin.saveSettings();
+    });
 
     section.createDiv({ cls: 'ka-setting-hint', text: 'Kommt in einem zukünftigen Update.' });
   }
@@ -804,7 +1031,8 @@ export class DashboardView extends ItemView {
   private addSectionHeader(container: HTMLElement, title: string, onEdit: () => void) {
     const header = container.createDiv({ cls: 'ka-section-header' });
     header.createEl('h4', { text: title });
-    const editBtn = header.createEl('button', { text: '✏️', cls: 'ka-section-edit-btn', attr: { 'aria-label': 'Bearbeiten' } });
+    const editBtn = header.createEl('button', { cls: 'ka-section-edit-btn', attr: { 'aria-label': 'Bearbeiten' } });
+    setIcon(editBtn, 'pencil');
     editBtn.addEventListener('click', () => onEdit());
   }
 

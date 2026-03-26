@@ -17,5 +17,9 @@
     "obsidian": "latest",
     "tslib": "2.4.0",
     "typescript": "4.7.4"
+  },
+  "dependencies": {
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7"
   }
 }

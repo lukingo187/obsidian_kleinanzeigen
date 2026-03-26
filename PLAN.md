@@ -83,6 +83,7 @@ src/
 │   ├── vaultService.ts     # Read/write MD notes via Obsidian API
 │   ├── statsService.ts     # Calculations (profit, averages, sale duration)
 │   ├── aiService.ts        # Provider-agnostic AI description generation (Anthropic, OpenAI)
+│   ├── exportService.ts    # CSV and PDF export (jsPDF + jspdf-autotable)
 │   └── templateService.ts  # Template CRUD (stored in plugin settings)
 └── utils/
     └── formatting.ts       # Date/currency/porto formatting
@@ -112,7 +113,7 @@ Full shipping workflow and better navigation.
 - [x] Ship Item Modal — address, porto, tracking number, label status
 - [x] Payment tracking (bezahlt checkbox, date — in Sold Modal)
 - [x] Detailed item view (full info card with Inserat/Verkauf/Versand/Finanzen sections)
-- [x] Edit buttons per section (✏️ opens corresponding modal with pre-filled values)
+- [x] Edit buttons per section (Lucide pencil icon, opens corresponding modal with pre-filled values)
 - [x] Dashboard filters (by status)
 - [x] Search by title / address
 - [x] Re-listing workflow (Abgelaufen → Neu einstellen)
@@ -162,26 +163,26 @@ Streamlined workflows for repeat sellers and completed items.
 - [x] **Abgelaufen-Aktion**
   - Aktive Artikel können direkt als "Abgelaufen" markiert werden
 
-### Phase 6 — Bulk-Operationen & Export
+### Phase 6 — Bulk-Operationen, Export & UI Polish
 
-Efficient multi-item management and data export.
+Efficient multi-item management, data export, and polished UI.
 
-- [ ] **Bulk-Operationen**
-  - Checkboxen in der Dashboard-Tabelle
-  - "Alle auswählen" / "Keine auswählen"
-  - Verfügbare Bulk-Aktionen (kontextabhängig):
-    - Archivieren (für Abgeschlossene)
-    - Löschen (mit Bestätigung)
-    - Status ändern (z.B. Abgelaufen markieren)
-    - Exportieren (Auswahl)
-- [ ] **CSV-Export**
-  - Alle Artikel oder aktuelle Auswahl/Filter
-  - Konfigurierbare Spalten
-  - Geeignet für Steuerunterlagen
-- [ ] **PDF-Export**
-  - Formatierte Übersicht als PDF
-  - Einzelartikel oder Gesamtliste
-  - Statistiken/Zusammenfassung inkl.
+- [x] **Sortierbare Tabelle** — Spalten: Artikel, Preis, Versand, Eingestellt, Status (▲▼ Indikatoren)
+- [x] **Bulk-Operationen**
+  - Checkboxen in der Dashboard-Tabelle mit "Alle auswählen"
+  - Kontextabhängige Bulk-Aktionen: Archivieren, Löschen, Abgelaufen
+  - Export-Dropdown (Exportieren-Button mit Share-Icon → CSV/PDF)
+- [x] **CSV-Export** (`src/services/exportService.ts`) — Semikolon-getrennt, BOM für Excel
+- [x] **PDF-Export** — via jsPDF + jspdf-autotable
+- [x] **Status-Undo** — In Detailansicht: Status rückgängig machen (mit Feld-Reset)
+- [x] **UI Design Polish** (siehe `DESIGN.md`)
+  - Border-Radius System normalisiert (16px Pill / 12px Sections / 8px Inputs)
+  - Alle Emojis durch Lucide Icons ersetzt (`setIcon()`)
+  - Einstellungen komplett überarbeitet (Section Descriptions, Toggle-Switch, größere Inputs)
+  - Modals: Abgerundete Inputs/Buttons, konsistentes Spacing
+  - Export-Dropdown mit Animation (fade-in + arrow pointer)
+  - Transitions auf allen interaktiven Elementen
+  - Suchleiste/Filter in Detailansicht ausgeblendet
 
 ### Phase 7 — Erweiterte Statistiken
 
@@ -208,6 +209,13 @@ Extend the plugin to also track eBay listings alongside Kleinanzeigen.
 
 ## Mögliche zusätzliche Features
 
+### UI/UX Verbesserungen
+- Keyboard-Shortcuts für häufige Aktionen (z.B. `n` → Neuer Artikel, `Esc` → Zurück zur Liste)
+- Stat-Cards in der Übersicht: subtile farbige Akzente pro Status (z.B. grüner Dot neben "Aktiv")
+- Animierte Statusübergänge in der Tabelle (z.B. Fade-Out beim Statuswechsel)
+- Undo-Button Redesign: Pfeil `←` ggf. durch Icon ersetzen, Positionierung vom Button anpassen (z.B. abgesetzt vom Hauptaktion-Button)
+
+### Funktionale Features
 - Erinnerungen (Zahlung ausstehend, Versand ausstehend) — Obsidian hat keine nativen Push-Notifications, aber in-App `Notice` ist möglich (wird angezeigt wenn Obsidian offen ist)
 - Support für Bundles (mehrere Artikel zusammen verkaufen)
 - Fotos pro Artikel tracken
