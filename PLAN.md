@@ -314,10 +314,64 @@ Archiv ist kein eigener Tab, sondern ein Filter-Button in der Übersicht (rechts
 
 ---
 
+## Community Plugin Release
+
+Steps to publish as a public Obsidian community plugin.
+
+### Missing Files
+- [ ] `LICENSE` — MIT license file (required by Obsidian review)
+- [ ] `versions.json` — Maps plugin version to minimum Obsidian version (`{ "0.1.0": "0.15.0" }`)
+- [ ] `.github/workflows/release.yml` — GitHub Actions workflow to auto-build releases (Obsidian provides a template)
+
+### .gitignore Updates
+- [ ] Add `data.json` (user data, not source)
+- [ ] Add `.claude/` (dev tooling)
+- [ ] Remove `main.js` from `.gitignore` OR use GitHub Actions to build+attach it to releases
+
+### manifest.json / package.json
+- [ ] Review `isDesktopOnly` — does the plugin work on Obsidian mobile? If yes, set to `false`
+- [ ] Fill in `author` and `keywords` in `package.json`
+- [ ] Ensure `manifest.json` id matches the repo name convention
+
+### README Expansion
+- [ ] Add banner image / screenshots of the dashboard (overview, stats, detail, modals)
+- [ ] Add installation instructions (Community Plugins browser + manual)
+- [ ] Add configuration section (AI setup, API keys, templates)
+- [ ] Add "How it works" / workflow section with screenshots
+- [ ] Add changelog or link to GitHub releases
+
+### Optional Cleanup
+- [ ] Decide whether `PLAN.md` and `DESIGN.md` stay in the repo (most plugins don't ship these)
+- [ ] Add a `.github/FUNDING.yml` if accepting donations (Buy Me a Coffee, GitHub Sponsors, etc.)
+
+### Submission Process
+1. Create a GitHub release with tag `0.1.0` containing `manifest.json`, `main.js`, `styles.css`
+2. Fork [obsidianmd/obsidian-releases](https://github.com/obsidianmd/obsidian-releases)
+3. Add plugin entry to `community-plugins.json`:
+   ```json
+   {
+     "id": "kleinanzeigen",
+     "name": "Kleinanzeigen Tracker",
+     "author": "lukasoberliess",
+     "description": "Track Kleinanzeigen listings from creation to shipment with profit tracking.",
+     "repo": "lukasoberliess/obsidian-kleinanzeigen"
+   }
+   ```
+4. Open a PR — Obsidian team reviews (typically 1–3 weeks)
+
+### Review Criteria (what Obsidian checks)
+- No remote code loading (only API calls — we're fine)
+- No obfuscated code
+- `manifest.json` matches repo
+- Plugin works as described
+- README is clear and descriptive
+- No security issues (API keys stored locally — we're fine)
+
+---
+
 ## Open Questions
 
 - Track multiple photos per item?
-- Support for bundles (selling multiple items together)?
 - Support for bundles (selling multiple items together)?
 
 ---
