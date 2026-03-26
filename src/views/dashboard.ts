@@ -36,6 +36,7 @@ export class DashboardView extends ItemView {
   private sortDirection: 'asc' | 'desc' = 'desc';
   private selectedPaths: Set<string> = new Set();
   private editingTemplate: ArticleTemplate | null = null;
+  private dropdownCloseHandler: (() => void) | null = null;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -53,8 +54,56 @@ export class DashboardView extends ItemView {
   getDisplayText() { return 'Kleinanzeigen'; }
   getIcon() { return 'shopping-cart'; }
 
+  private keyHandler = this.handleKeydown.bind(this);
+
   async onOpen() {
     await this.refresh();
+    this.containerEl.addEventListener('keydown', this.keyHandler);
+    // Make container focusable to receive key events
+    this.containerEl.tabIndex = -1;
+  }
+
+  async onClose() {
+    this.containerEl.removeEventListener('keydown', this.keyHandler);
+    if (this.dropdownCloseHandler) {
+      document.removeEventListener('click', this.dropdownCloseHandler);
+      this.dropdownCloseHandler = null;
+    }
+  }
+
+  private handleKeydown(e: KeyboardEvent) {
+    // Skip if user is typing in an input/textarea/select
+    const tag = (e.target as HTMLElement).tagName;
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return;
+
+    switch (e.key) {
+      case 'Escape':
+        if (this.expandedListing) {
+          e.preventDefault();
+          this.expandedListing = null;
+          this.render();
+        }
+        break;
+      case 'n':
+        if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+          e.preventDefault();
+          this.callbacks.onNewItem();
+        }
+        break;
+      case 'r':
+        if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+          e.preventDefault();
+          this.refresh();
+        }
+        break;
+      case '/':
+        if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+          e.preventDefault();
+          const searchInput = this.containerEl.querySelector('.ka-search-input') as HTMLInputElement | null;
+          if (searchInput) searchInput.focus();
+        }
+        break;
+    }
   }
 
   async refresh() {
@@ -124,9 +173,13 @@ export class DashboardView extends ItemView {
     }
   }
 
+  private refreshAfterWrite() {
+    this.refreshAfterWrite();
+  }
+
   private async transitionStatus(listing: Listing, status: Status) {
     await this.vaultService.updateListing({ ...listing, status });
-    setTimeout(() => this.refresh(), 200);
+    this.refreshAfterWrite();
   }
 
   private async undoStatus(listing: Listing, targetStatus: Status) {
@@ -152,7 +205,7 @@ export class DashboardView extends ItemView {
     }
 
     await this.vaultService.updateListing(updated);
-    setTimeout(() => this.refresh(), 200);
+    this.refreshAfterWrite();
   }
 
   // ── Overview Tab ──
@@ -174,17 +227,17 @@ export class DashboardView extends ItemView {
     const stats = calculateStats(this.listings);
     const statsEl = root.createDiv({ cls: 'ka-stats' });
 
-    const items: [string, string][] = [
-      ['Aktiv', stats.activeCount.toString()],
-      ['Verkauft', stats.soldCount.toString()],
-      ['Verschickt', stats.shippedCount.toString()],
-      ['Abgeschlossen', stats.completedCount.toString()],
-      ['Umsatz', formatCurrency(stats.totalRevenue)],
-      ['Gewinn', formatCurrency(stats.totalProfit)],
+    const items: [string, string, string][] = [
+      ['Aktiv', stats.activeCount.toString(), 'aktiv'],
+      ['Verkauft', stats.soldCount.toString(), 'verkauft'],
+      ['Verschickt', stats.shippedCount.toString(), 'verschickt'],
+      ['Abgeschlossen', stats.completedCount.toString(), 'abgeschlossen'],
+      ['Umsatz', formatCurrency(stats.totalRevenue), 'umsatz'],
+      ['Gewinn', formatCurrency(stats.totalProfit), 'gewinn'],
     ];
 
-    for (const [label, value] of items) {
-      const card = statsEl.createDiv({ cls: 'ka-stat-card' });
+    for (const [label, value, accent] of items) {
+      const card = statsEl.createDiv({ cls: `ka-stat-card ka-accent-${accent}` });
       card.createDiv({ cls: 'ka-stat-value', text: value });
       card.createDiv({ cls: 'ka-stat-label', text: label });
     }
@@ -311,7 +364,7 @@ export class DashboardView extends ItemView {
       btn.addEventListener('click', async () => {
         for (const l of selected) await this.vaultService.updateListing({ ...l, status: 'Archiviert' });
         this.selectedPaths.clear();
-        setTimeout(() => this.refresh(), 200);
+        this.refreshAfterWrite();
       });
     }
 
@@ -320,7 +373,7 @@ export class DashboardView extends ItemView {
       btn.addEventListener('click', async () => {
         for (const l of selected) await this.vaultService.updateListing({ ...l, status: 'Abgelaufen' });
         this.selectedPaths.clear();
-        setTimeout(() => this.refresh(), 200);
+        this.refreshAfterWrite();
       });
     }
 
@@ -330,7 +383,7 @@ export class DashboardView extends ItemView {
         if (!confirm(`${selected.length} Artikel wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) return;
         for (const l of selected) await this.vaultService.deleteListing(l);
         this.selectedPaths.clear();
-        setTimeout(() => this.refresh(), 200);
+        this.refreshAfterWrite();
       });
     }
 
@@ -366,8 +419,17 @@ export class DashboardView extends ItemView {
       if (!isOpen) {
         dropdown.addClass('ka-export-dropdown-open');
         requestAnimationFrame(() => dropdown.addClass('ka-export-dropdown-visible'));
-        const close = () => { closeDropdown(); document.removeEventListener('click', close); };
-        document.addEventListener('click', close);
+        if (this.dropdownCloseHandler) {
+          document.removeEventListener('click', this.dropdownCloseHandler);
+        }
+        this.dropdownCloseHandler = () => {
+          closeDropdown();
+          if (this.dropdownCloseHandler) {
+            document.removeEventListener('click', this.dropdownCloseHandler);
+            this.dropdownCloseHandler = null;
+          }
+        };
+        document.addEventListener('click', this.dropdownCloseHandler);
       } else {
         closeDropdown();
       }
@@ -427,8 +489,11 @@ export class DashboardView extends ItemView {
     headerRow.createEl('th', { text: 'Aktionen' });
 
     const tbody = table.createEl('tbody');
-    for (const listing of filtered) {
-      const row = tbody.createEl('tr', { cls: 'ka-row' });
+    for (let i = 0; i < filtered.length; i++) {
+      const listing = filtered[i];
+      const row = tbody.createEl('tr', { cls: 'ka-row ka-row-enter' });
+      row.dataset.status = listing.status.toLowerCase();
+      row.style.animationDelay = `${i * 25}ms`;
 
       // Row checkbox
       const cbCell = row.createEl('td');
@@ -494,12 +559,12 @@ export class DashboardView extends ItemView {
           if (this.expandedListing?.filePath === listing.filePath) {
             this.expandedListing = null;
           }
-          setTimeout(() => this.refresh(), 200);
+          this.refreshAfterWrite();
         }
       });
     }
 
-    // Undo button in detail view
+    // Undo button in detail view — separated from forward actions
     if (context === 'detail') {
       const prevStatus: Partial<Record<Status, Status>> = {
         'Verkauft': 'Aktiv',
@@ -510,7 +575,13 @@ export class DashboardView extends ItemView {
       };
       const prev = prevStatus[listing.status];
       if (prev) {
-        const undoBtn = cell.createEl('button', { text: `← ${prev}`, cls: 'ka-action-btn ka-undo-btn' });
+        const undoBtn = cell.createEl('button', {
+          cls: 'ka-action-btn ka-undo-btn',
+          attr: { 'aria-label': `Zurück zu ${prev}` },
+        });
+        const iconSpan = undoBtn.createSpan({ cls: 'ka-undo-icon' });
+        setIcon(iconSpan, 'undo-2');
+        undoBtn.createSpan({ text: prev, cls: 'ka-undo-label' });
         undoBtn.addEventListener('click', (e) => { e.stopPropagation(); this.undoStatus(listing, prev); });
       }
     }
@@ -604,26 +675,31 @@ export class DashboardView extends ItemView {
     const aiCost = this.plugin.settings.aiUsage.anthropic.totalCostUSD
       + this.plugin.settings.aiUsage.openai.totalCostUSD;
 
-    // Unified stats grid (8 cards, 4 per row)
+    // Unified stats grid (8 cards, 4 per row) with Lucide icons and accent colors
     const statsGrid = root.createDiv({ cls: 'ka-stats-grid' });
-    const cards: [string, string][] = [
-      [this.listings.length.toString(), 'Gesamt eingestellt'],
-      [totalStats.totalSoldCount.toString(), 'Gesamt verkauft'],
-      [formatCurrency(totalStats.totalRevenue), 'Gesamt Umsatz'],
-      [formatCurrency(totalStats.totalProfit), 'Gesamt Gewinn'],
-      [extStats.avgSaleDurationDays !== null ? `${extStats.avgSaleDurationDays}d` : '—', 'Ø Verkaufsdauer'],
-      [extStats.avgSalePrice !== null ? formatCurrency(extStats.avgSalePrice) : '—', 'Ø Verkaufspreis'],
-      [formatCurrency(totalStats.totalShippingCost), 'Gesamtporto'],
-      [`$${aiCost.toFixed(4)}`, 'API-Kosten'],
+    const cards: [string, string, string, string][] = [
+      [this.listings.length.toString(), 'Gesamt eingestellt', 'package', 'stats-listed'],
+      [totalStats.totalSoldCount.toString(), 'Gesamt verkauft', 'shopping-cart', 'stats-sold'],
+      [formatCurrency(totalStats.totalRevenue), 'Gesamt Umsatz', 'trending-up', 'stats-revenue'],
+      [formatCurrency(totalStats.totalProfit), 'Gesamt Gewinn', 'wallet', 'stats-profit'],
+      [extStats.avgSaleDurationDays !== null ? `${extStats.avgSaleDurationDays}d` : '—', 'Ø Verkaufsdauer', 'clock', 'stats-duration'],
+      [extStats.avgSalePrice !== null ? formatCurrency(extStats.avgSalePrice) : '—', 'Ø Verkaufspreis', 'tag', 'stats-avgprice'],
+      [formatCurrency(totalStats.totalShippingCost), 'Gesamtporto', 'truck', 'stats-shipping'],
+      [`$${aiCost.toFixed(4)}`, 'API-Kosten', 'cpu', 'stats-ai'],
     ];
-    for (const [value, label] of cards) {
-      const card = statsGrid.createDiv({ cls: 'ka-stat-card' });
+    for (let i = 0; i < cards.length; i++) {
+      const [value, label, icon, accent] = cards[i];
+      const card = statsGrid.createDiv({ cls: `ka-stat-card ka-${accent}` });
+      card.style.animationDelay = `${i * 40}ms`;
+      const iconEl = card.createDiv({ cls: 'ka-stat-icon' });
+      setIcon(iconEl, icon);
       card.createDiv({ cls: 'ka-stat-value', text: value });
       card.createDiv({ cls: 'ka-stat-label', text: label });
     }
 
     // Zeitraum-Toggle
     const toggle = root.createDiv({ cls: 'ka-filters' });
+    const periodContainer = root.createDiv({ cls: 'ka-period-container' });
     const periods: [StatsPeriod, string][] = [['monthly', 'Monatlich'], ['yearly', 'Jährlich']];
     for (const [period, label] of periods) {
       const btn = toggle.createEl('button', {
@@ -632,21 +708,31 @@ export class DashboardView extends ItemView {
       });
       btn.addEventListener('click', () => {
         this.statsPeriod = period;
-        this.render();
+        // Only re-render the period table, not the whole page
+        this.renderPeriodTable(periodContainer);
+        // Update toggle button states
+        toggle.querySelectorAll('.ka-filter-btn').forEach((b, i) => {
+          b.toggleClass('ka-filter-active', periods[i][0] === period);
+        });
       });
     }
 
-    // Perioden-Tabelle
+    this.renderPeriodTable(periodContainer);
+  }
+
+  private renderPeriodTable(container: HTMLElement) {
+    container.empty();
+
     const periodData = this.statsPeriod === 'monthly'
       ? calculateMonthlyStats(this.listings)
       : calculateYearlyStats(this.listings);
 
     if (periodData.length === 0) {
-      root.createDiv({ cls: 'ka-empty', text: 'Noch keine Daten vorhanden.' });
+      container.createDiv({ cls: 'ka-empty', text: 'Noch keine Daten vorhanden.' });
       return;
     }
 
-    const table = root.createEl('table', { cls: 'ka-table' });
+    const table = container.createEl('table', { cls: 'ka-table' });
     const thead = table.createEl('thead');
     const headerRow = thead.createEl('tr');
     for (const col of ['Zeitraum', 'Eingestellt', 'Verkauft', 'Umsatz', 'Portokosten', 'Gewinn']) {

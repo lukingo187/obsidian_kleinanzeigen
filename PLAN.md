@@ -195,7 +195,25 @@ Better insights into sales performance.
   - Gesamtportokosten-Übersicht
   - API-Kostenübersicht (Anthropic + OpenAI)
 
-### Phase 8 — eBay-Integration (Zukunft)
+### Phase 8 — Foto-basierte KI-Beschreibungen
+
+AI description generation from photos — user takes a picture, AI generates title, condition, and description.
+
+- [ ] **Foto-Upload im New Item Modal**
+  - Datei-Auswahl über Obsidian File-Picker (Vault-Dateien) oder Drag & Drop
+  - Vorschau der ausgewählten Bilder (Thumbnail-Leiste)
+  - Mehrere Fotos gleichzeitig möglich (max. 4)
+- [ ] **Multimodal API-Aufrufe** (`src/services/aiService.ts`)
+  - Bilder als Base64-Content-Blocks an Anthropic/OpenAI senden
+  - Anthropic: `content: [{ type: 'image', source: { type: 'base64', ... } }, { type: 'text', text: prompt }]`
+  - OpenAI: `content: [{ type: 'image_url', image_url: { url: 'data:image/...' } }, { type: 'text', text: prompt }]`
+  - Prompt-Anpassung: KI soll aus den Fotos Artikel, Zustand, Porto-Schätzung und Beschreibung ableiten
+- [ ] **Kombinierter Modus**: Fotos + optionaler Freitext (z.B. "Nintendo Switch, kaum benutzt")
+  - Wenn nur Fotos → KI beschreibt was sie sieht
+  - Wenn Fotos + Text → KI nutzt beides für bessere Ergebnisse
+- [ ] **Token-Kosten beachten**: Bilder verbrauchen deutlich mehr Tokens — Kostenanzeige in API-Nutzung anpassen
+
+### Phase 9 — eBay-Integration (Zukunft)
 
 Extend the plugin to also track eBay listings alongside Kleinanzeigen.
 
@@ -210,10 +228,10 @@ Extend the plugin to also track eBay listings alongside Kleinanzeigen.
 ## Mögliche zusätzliche Features
 
 ### UI/UX Verbesserungen
-- Keyboard-Shortcuts für häufige Aktionen (z.B. `n` → Neuer Artikel, `Esc` → Zurück zur Liste)
-- Stat-Cards in der Übersicht: subtile farbige Akzente pro Status (z.B. grüner Dot neben "Aktiv")
-- Animierte Statusübergänge in der Tabelle (z.B. Fade-Out beim Statuswechsel)
-- Undo-Button Redesign: Pfeil `←` ggf. durch Icon ersetzen, Positionierung vom Button anpassen (z.B. abgesetzt vom Hauptaktion-Button)
+- [x] Keyboard-Shortcuts: `n` → Neuer Artikel, `Esc` → Zurück zur Liste, `r` → Aktualisieren, `/` → Suche fokussieren
+- [x] Stat-Cards: Farbige linke Border-Akzente pro Status + farbige Werte (Grün/Amber/Blau etc.)
+- [x] Animierte Tabellenzeilen: Staggered slide-in Animation beim Laden + farbige Status-Indikatoren am linken Rand
+- [x] Undo-Button Redesign: Lucide `undo-2` Icon + Label, gestrichelte Border, abgesetzt vom Hauptaktion-Button, dezent mit hover-reveal
 
 ### Funktionale Features
 - Erinnerungen (Zahlung ausstehend, Versand ausstehend) — Obsidian hat keine nativen Push-Notifications, aber in-App `Notice` ist möglich (wird angezeigt wenn Obsidian offen ist)
