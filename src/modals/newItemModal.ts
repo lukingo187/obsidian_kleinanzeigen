@@ -164,8 +164,8 @@ export class NewItemModal extends Modal {
         this.descTextArea.value = parsed.beschreibung;
 
         new Notice('Felder wurden ausgefüllt. Bitte prüfen und ergänzen.');
-      } catch (e: any) {
-        new Notice(e.message ?? 'Fehler bei der KI-Analyse.');
+      } catch (e) {
+        new Notice(e instanceof Error ? e.message : 'Fehler bei der KI-Analyse.');
       } finally {
         aiBtn.textContent = 'KI ausfüllen';
         aiBtn.disabled = false;

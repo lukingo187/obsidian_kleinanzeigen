@@ -10,3 +10,9 @@ node_modules
 
 # OS
 .DS_Store
+
+# Plugin data (contains API keys)
+data.json
+
+# Claude Code
+.claude/

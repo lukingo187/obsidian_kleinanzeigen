@@ -12,7 +12,7 @@ export class ShipModal extends Modal {
 
   constructor(app: App, listing: Listing, onSubmit: (listing: Listing) => void) {
     super(app);
-    this.listing = listing;
+    this.listing = { ...listing };
     this.anschrift = listing.anschrift ?? '';
     this.porto = listing.porto ?? PORTO_OPTIONS[0];
     this.sendungsnummer = listing.sendungsnummer ?? '';

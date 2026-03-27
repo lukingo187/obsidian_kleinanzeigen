@@ -13,7 +13,7 @@ export class EditListingModal extends Modal {
 
   constructor(app: App, listing: Listing, onSubmit: (listing: Listing) => void) {
     super(app);
-    this.listing = listing;
+    this.listing = { ...listing };
     this.artikel = listing.artikel;
     this.zustand = listing.zustand;
     this.preis = listing.preis;

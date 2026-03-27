@@ -14,7 +14,7 @@ export class SoldModal extends Modal {
 
   constructor(app: App, listing: Listing, onSubmit: (listing: Listing) => void) {
     super(app);
-    this.listing = listing;
+    this.listing = { ...listing };
     this.isEdit = listing.verkauft;
     this.verkauftFuer = listing.verkauft_fuer ?? listing.preis;
     this.bezahlart = listing.bezahlart ?? 'PayPal';

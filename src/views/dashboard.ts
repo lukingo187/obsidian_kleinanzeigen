@@ -6,6 +6,7 @@ import { calculateStats, calculateMonthlyStats, calculateYearlyStats, calculateE
 import { formatCurrency, formatDateDE, parsePortoPrice } from '../utils/formatting';
 import { TemplateService } from '../services/templateService';
 import { ExportService } from '../services/exportService';
+import { ConfirmModal } from '../modals/confirmModal';
 import type KleinanzeigenPlugin from '../main';
 
 export const DASHBOARD_VIEW_TYPE = 'kleinanzeigen-dashboard';
@@ -37,6 +38,7 @@ export class DashboardView extends ItemView {
   private selectedPaths: Set<string> = new Set();
   private editingTemplate: ArticleTemplate | null = null;
   private dropdownCloseHandler: (() => void) | null = null;
+  private closed = false;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -64,6 +66,7 @@ export class DashboardView extends ItemView {
   }
 
   async onClose() {
+    this.closed = true;
     this.containerEl.removeEventListener('keydown', this.keyHandler);
     if (this.dropdownCloseHandler) {
       document.removeEventListener('click', this.dropdownCloseHandler);
@@ -174,12 +177,18 @@ export class DashboardView extends ItemView {
   }
 
   private refreshAfterWrite() {
-    this.refreshAfterWrite();
+    setTimeout(() => {
+      if (!this.closed) this.refresh();
+    }, 200);
   }
 
   private async transitionStatus(listing: Listing, status: Status) {
-    await this.vaultService.updateListing({ ...listing, status });
-    this.refreshAfterWrite();
+    try {
+      await this.vaultService.updateListing({ ...listing, status });
+      this.refreshAfterWrite();
+    } catch (e) {
+      new Notice(`Fehler beim Statuswechsel: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
 
   private async undoStatus(listing: Listing, targetStatus: Status) {
@@ -204,8 +213,12 @@ export class DashboardView extends ItemView {
       updated.label_erstellt = false;
     }
 
-    await this.vaultService.updateListing(updated);
-    this.refreshAfterWrite();
+    try {
+      await this.vaultService.updateListing(updated);
+      this.refreshAfterWrite();
+    } catch (e) {
+      new Notice(`Fehler beim Rückgängig machen: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
 
   // ── Overview Tab ──
@@ -362,8 +375,13 @@ export class DashboardView extends ItemView {
     if (selected.every(l => l.status === 'Abgeschlossen')) {
       const btn = actions.createEl('button', { text: 'Archivieren', cls: 'ka-action-btn ka-archive-action-btn' });
       btn.addEventListener('click', async () => {
-        for (const l of selected) await this.vaultService.updateListing({ ...l, status: 'Archiviert' });
+        let failed = 0;
+        for (const l of selected) {
+          try { await this.vaultService.updateListing({ ...l, status: 'Archiviert' }); }
+          catch { failed++; }
+        }
         this.selectedPaths.clear();
+        if (failed > 0) new Notice(`${failed} von ${selected.length} Artikeln konnten nicht archiviert werden.`);
         this.refreshAfterWrite();
       });
     }
@@ -371,19 +389,30 @@ export class DashboardView extends ItemView {
     if (selected.every(l => l.status === 'Aktiv')) {
       const btn = actions.createEl('button', { text: 'Abgelaufen', cls: 'ka-action-btn ka-expired-btn' });
       btn.addEventListener('click', async () => {
-        for (const l of selected) await this.vaultService.updateListing({ ...l, status: 'Abgelaufen' });
+        let failed = 0;
+        for (const l of selected) {
+          try { await this.vaultService.updateListing({ ...l, status: 'Abgelaufen' }); }
+          catch { failed++; }
+        }
         this.selectedPaths.clear();
+        if (failed > 0) new Notice(`${failed} von ${selected.length} Artikeln konnten nicht aktualisiert werden.`);
         this.refreshAfterWrite();
       });
     }
 
     if (selected.every(l => l.status === 'Archiviert')) {
       const btn = actions.createEl('button', { text: 'Löschen', cls: 'ka-action-btn ka-delete-btn' });
-      btn.addEventListener('click', async () => {
-        if (!confirm(`${selected.length} Artikel wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) return;
-        for (const l of selected) await this.vaultService.deleteListing(l);
-        this.selectedPaths.clear();
-        this.refreshAfterWrite();
+      btn.addEventListener('click', () => {
+        new ConfirmModal(this.app, `${selected.length} Artikel wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`, async () => {
+          let failed = 0;
+          for (const l of selected) {
+            try { await this.vaultService.deleteListing(l); }
+            catch { failed++; }
+          }
+          this.selectedPaths.clear();
+          if (failed > 0) new Notice(`${failed} von ${selected.length} Artikeln konnten nicht gelöscht werden.`);
+          this.refreshAfterWrite();
+        }).open();
       });
     }
 
@@ -514,7 +543,7 @@ export class DashboardView extends ItemView {
 
       const statusCell = row.createEl('td');
       const badge = statusCell.createSpan({ cls: `ka-badge ka-status-${listing.status.toLowerCase()}` });
-      badge.setText(this.statusIcon(listing.status) + ' ' + listing.status);
+      this.renderStatusBadge(badge, listing.status);
 
       const actionsCell = row.createEl('td', { cls: 'ka-actions' });
       this.renderActions(actionsCell, listing);
@@ -552,15 +581,15 @@ export class DashboardView extends ItemView {
     // Delete button for archived items
     if (listing.status === 'Archiviert') {
       const delBtn = cell.createEl('button', { text: 'Löschen', cls: 'ka-action-btn ka-delete-btn' });
-      delBtn.addEventListener('click', async (e) => {
+      delBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (confirm(`"${listing.artikel}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
+        new ConfirmModal(this.app, `"${listing.artikel}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`, async () => {
           await this.vaultService.deleteListing(listing);
           if (this.expandedListing?.filePath === listing.filePath) {
             this.expandedListing = null;
           }
           this.refreshAfterWrite();
-        }
+        }).open();
       });
     }
 
@@ -601,7 +630,7 @@ export class DashboardView extends ItemView {
     const titleRow = detail.createDiv({ cls: 'ka-detail-title' });
     titleRow.createEl('h3', { text: listing.artikel });
     const badge = titleRow.createSpan({ cls: `ka-badge ka-status-${listing.status.toLowerCase()}` });
-    badge.setText(this.statusIcon(listing.status) + ' ' + listing.status);
+    this.renderStatusBadge(badge, listing.status);
 
     const grid = detail.createDiv({ cls: 'ka-detail-grid' });
 
@@ -799,11 +828,11 @@ export class DashboardView extends ItemView {
         const delBtn = btns.createEl('button', { cls: 'ka-section-edit-btn', attr: { 'aria-label': 'Löschen' } });
         setIcon(delBtn, 'trash-2');
         delBtn.addEventListener('click', () => {
-          if (confirm(`Template "${tpl.name}" löschen?`)) {
+          new ConfirmModal(this.app, `Template "${tpl.name}" löschen?`, () => {
             settings.templates = TemplateService.delete(settings.templates, tpl.id);
             this.plugin.saveSettings();
             this.render();
-          }
+          }).open();
         });
       }
     }
@@ -1012,8 +1041,8 @@ export class DashboardView extends ItemView {
           const result = await aiService.testApiKey(settings.aiProvider, config.apiKey, config.model);
           testResult.setText(result.ok ? 'Verbindung erfolgreich!' : (result.error ?? 'Verbindung fehlgeschlagen.'));
           testResult.className = `ka-test-result ${result.ok ? 'ka-test-ok' : 'ka-test-fail'}`;
-        } catch (e: any) {
-          testResult.setText(e?.message ?? 'Verbindung fehlgeschlagen.');
+        } catch (e) {
+          testResult.setText(e instanceof Error ? e.message : 'Verbindung fehlgeschlagen.');
           testResult.className = 'ka-test-result ka-test-fail';
         } finally {
           testBtn.textContent = 'API-Key prüfen';
@@ -1087,15 +1116,8 @@ export class DashboardView extends ItemView {
     const group = section.createDiv({ cls: 'ka-setting-item ka-setting-toggle' });
     group.createEl('label', { text: 'eBay aktivieren' });
 
-    const toggleBtn = group.createEl('button', { cls: 'ka-toggle-switch', attr: { role: 'switch', 'aria-checked': String(settings.ebayEnabled) } });
-    if (settings.ebayEnabled) toggleBtn.addClass('is-active');
+    const toggleBtn = group.createEl('button', { cls: 'ka-toggle-switch', attr: { role: 'switch', 'aria-checked': 'false' } });
     toggleBtn.disabled = true;
-    toggleBtn.addEventListener('click', () => {
-      settings.ebayEnabled = !settings.ebayEnabled;
-      toggleBtn.toggleClass('is-active', settings.ebayEnabled);
-      toggleBtn.setAttribute('aria-checked', String(settings.ebayEnabled));
-      this.plugin.saveSettings();
-    });
 
     section.createDiv({ cls: 'ka-setting-hint', text: 'Kommt in einem zukünftigen Update.' });
   }
@@ -1128,15 +1150,18 @@ export class DashboardView extends ItemView {
     row.createSpan({ cls: 'ka-detail-value', text: value });
   }
 
-  private statusIcon(status: Status): string {
-    const icons: Record<Status, string> = {
-      'Aktiv': '🟢',
-      'Verkauft': '💰',
-      'Verschickt': '🚚',
-      'Abgeschlossen': '✅',
-      'Abgelaufen': '⏳',
-      'Archiviert': '📦',
-    };
-    return icons[status];
+  private readonly statusLucideIcon: Record<Status, string> = {
+    'Aktiv': 'circle-dot',
+    'Verkauft': 'banknote',
+    'Verschickt': 'truck',
+    'Abgeschlossen': 'circle-check',
+    'Abgelaufen': 'clock',
+    'Archiviert': 'archive',
+  };
+
+  private renderStatusBadge(el: HTMLElement, status: Status) {
+    const iconSpan = el.createSpan({ cls: 'ka-status-icon' });
+    setIcon(iconSpan, this.statusLucideIcon[status]);
+    el.createSpan({ text: status });
   }
 }

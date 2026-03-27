@@ -19,7 +19,14 @@ export class VaultService {
     await this.ensureFolder();
 
     const safeName = listing.artikel.replace(/[\\/:*?"<>|]/g, '_');
-    const filePath = normalizePath(`${BASE_FOLDER}/${safeName}.md`);
+    let filePath = normalizePath(`${BASE_FOLDER}/${safeName}.md`);
+
+    let counter = 1;
+    while (this.app.vault.getAbstractFileByPath(filePath)) {
+      filePath = normalizePath(`${BASE_FOLDER}/${safeName} ${counter}.md`);
+      counter++;
+    }
+
     const content = this.buildFileContent(listing);
     return await this.app.vault.create(filePath, content);
   }
@@ -105,7 +112,7 @@ export class VaultService {
       porto: fm.porto,
       anschrift: fm.anschrift,
       label_erstellt: fm.label_erstellt ?? false,
-      sendungsnummer: fm.sendungsnummer,
+      sendungsnummer: fm.sendungsnummer != null ? String(fm.sendungsnummer) : undefined,
       verschickt: fm.verschickt ?? false,
       verschickt_am: fm.verschickt_am,
       filePath: file.path,
@@ -121,16 +128,21 @@ export class VaultService {
       const idx = line.indexOf(':');
       if (idx === -1) continue;
       const key = line.slice(0, idx).trim();
+      if (!key) continue;
       let value: any = line.slice(idx + 1).trim();
 
-      // Remove surrounding quotes and unescape newlines
+      // Remove surrounding quotes and unescape newlines — keep as string
       if (value.startsWith('"') && value.endsWith('"')) {
         value = value.slice(1, -1).replace(/\\n/g, '\n');
       }
-      // Parse booleans and numbers
+      // Parse booleans
       else if (value === 'true') value = true;
       else if (value === 'false') value = false;
-      else if (!isNaN(Number(value)) && value !== '') value = Number(value);
+      // Parse numbers — only for unquoted values that look like plain numbers
+      // (no leading zeros except "0" itself, to preserve tracking numbers)
+      else if (value !== '' && /^-?(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value)) {
+        value = Number(value);
+      }
 
       fm[key] = value;
     }

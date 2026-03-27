@@ -9,7 +9,7 @@ export class RelistModal extends Modal {
 
   constructor(app: App, listing: Listing, onSubmit: (listing: Listing) => void) {
     super(app);
-    this.listing = listing;
+    this.listing = { ...listing };
     this.preis = listing.preis;
     this.onSubmit = onSubmit;
   }

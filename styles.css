@@ -231,10 +231,11 @@
   color: var(--text-normal);
 }
 
-.ka-tab-active {
-  color: var(--text-normal) !important;
-  border-bottom-color: var(--interactive-accent) !important;
-  border-image: linear-gradient(90deg, var(--interactive-accent), var(--ka-accent-end)) 1 !important;
+.ka-dashboard .ka-tab-active,
+.ka-dashboard .ka-tab-active:hover {
+  color: var(--text-normal);
+  border-bottom-color: var(--interactive-accent);
+  border-image: linear-gradient(90deg, var(--interactive-accent), var(--ka-accent-end)) 1;
 }
 
 /* Filter buttons */
@@ -260,10 +261,11 @@
   background: var(--background-modifier-hover);
 }
 
-.ka-filter-active {
-  background: linear-gradient(135deg, var(--interactive-accent), var(--ka-accent-end)) !important;
-  color: var(--text-on-accent) !important;
-  border-color: transparent !important;
+.ka-dashboard .ka-filter-active,
+.ka-dashboard .ka-filter-active:hover {
+  background: linear-gradient(135deg, var(--interactive-accent), var(--ka-accent-end));
+  color: var(--text-on-accent);
+  border-color: transparent;
   box-shadow: 0 1px 4px var(--ka-accent-glow);
 }
 
@@ -470,8 +472,8 @@
   cursor: pointer;
 }
 
-.ka-row:hover {
-  background: var(--background-modifier-hover) !important;
+.ka-dashboard .ka-row:hover {
+  background: var(--background-modifier-hover);
 }
 
 /* Row entrance animation */
@@ -500,11 +502,23 @@
 
 /* Status badges */
 .ka-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 0.85em;
   white-space: nowrap;
+}
+
+.ka-status-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.ka-status-icon svg {
+  width: 14px;
+  height: 14px;
 }
 
 .ka-status-aktiv { background: color-mix(in srgb, var(--ka-color-aktiv) 15%, transparent); color: var(--ka-color-aktiv); }

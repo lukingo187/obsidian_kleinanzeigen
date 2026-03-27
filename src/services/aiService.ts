@@ -46,8 +46,8 @@ export class AIService {
     try {
       await this.callProvider(provider, apiKey, model, 'Antworte nur mit "OK".');
       return { ok: true };
-    } catch (e: any) {
-      const msg = e?.message ?? 'Unbekannter Fehler';
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unbekannter Fehler';
       console.error('[Kleinanzeigen] API-Key Test fehlgeschlagen:', e);
       return { ok: false, error: msg };
     }

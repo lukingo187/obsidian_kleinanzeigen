@@ -45,6 +45,7 @@ export default class KleinanzeigenPlugin extends Plugin {
     });
   }
 
+  // Cleanup handled by DashboardView.onClose(); no plugin-level listeners to remove
   onunload() {}
 
   async activateDashboard() {
@@ -70,37 +71,53 @@ export default class KleinanzeigenPlugin extends Plugin {
       try {
         await this.vaultService.createListing(listing);
         this.refreshDashboard();
-      } catch (e: any) {
-        new Notice(`Fehler beim Erstellen: ${e.message}`);
+      } catch (e) {
+        new Notice(`Fehler beim Erstellen: ${e instanceof Error ? e.message : String(e)}`);
       }
     }).open();
   }
 
   private openEditListingModal(listing: Listing) {
     new EditListingModal(this.app, listing, async (updated: Listing) => {
-      await this.vaultService.updateListing(updated);
-      this.refreshDashboard();
+      try {
+        await this.vaultService.updateListing(updated);
+        this.refreshDashboard();
+      } catch (e) {
+        new Notice(`Fehler beim Speichern: ${e instanceof Error ? e.message : String(e)}`);
+      }
     }).open();
   }
 
   private openSoldModal(listing: Listing) {
     new SoldModal(this.app, listing, async (updated: Listing) => {
-      await this.vaultService.updateListing(updated);
-      this.refreshDashboard();
+      try {
+        await this.vaultService.updateListing(updated);
+        this.refreshDashboard();
+      } catch (e) {
+        new Notice(`Fehler beim Speichern: ${e instanceof Error ? e.message : String(e)}`);
+      }
     }).open();
   }
 
   private openShipModal(listing: Listing) {
     new ShipModal(this.app, listing, async (updated: Listing) => {
-      await this.vaultService.updateListing(updated);
-      this.refreshDashboard();
+      try {
+        await this.vaultService.updateListing(updated);
+        this.refreshDashboard();
+      } catch (e) {
+        new Notice(`Fehler beim Speichern: ${e instanceof Error ? e.message : String(e)}`);
+      }
     }).open();
   }
 
   private openRelistModal(listing: Listing) {
     new RelistModal(this.app, listing, async (updated: Listing) => {
-      await this.vaultService.updateListing(updated);
-      this.refreshDashboard();
+      try {
+        await this.vaultService.updateListing(updated);
+        this.refreshDashboard();
+      } catch (e) {
+        new Notice(`Fehler beim Speichern: ${e instanceof Error ? e.message : String(e)}`);
+      }
     }).open();
   }
 
