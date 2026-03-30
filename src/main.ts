@@ -15,7 +15,7 @@ export default class KleinanzeigenPlugin extends Plugin {
 
   async onload() {
     await this.loadSettings();
-    this.vaultService = new VaultService(this.app);
+    this.vaultService = new VaultService(this.app, () => this.settings.baseFolder);
 
     this.registerView(
       DASHBOARD_VIEW_TYPE,
@@ -122,15 +122,24 @@ export default class KleinanzeigenPlugin extends Plugin {
   }
 
   private refreshDashboard() {
-    // Small delay to let Obsidian's metadata cache update after file write
-    setTimeout(() => {
+    // Wait for Obsidian's metadata cache to process the file write, then refresh.
+    // Falls back to 500ms timeout in case the event doesn't fire.
+    let triggered = false;
+    const doRefresh = () => {
+      if (triggered) return;
+      triggered = true;
+      this.app.metadataCache.off('changed', onCacheChange);
+      clearTimeout(fallback);
       const leaves = this.app.workspace.getLeavesOfType(DASHBOARD_VIEW_TYPE);
       for (const leaf of leaves) {
         if (leaf.view instanceof DashboardView) {
           leaf.view.refresh();
         }
       }
-    }, 200);
+    };
+    const onCacheChange = () => doRefresh();
+    this.app.metadataCache.on('changed', onCacheChange);
+    const fallback = setTimeout(doRefresh, 500);
   }
 
   async loadSettings() {

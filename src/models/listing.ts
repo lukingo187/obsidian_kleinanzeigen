@@ -120,6 +120,7 @@ export interface AIUsageRecord {
 }
 
 export interface PluginSettings {
+  baseFolder: string;
   aiProvider: AIProvider;
   aiProviders: Record<AIProvider, AIProviderConfig>;
   aiUsage: Record<AIProvider, AIUsageRecord>;
@@ -152,6 +153,7 @@ const DEFAULT_USAGE: AIUsageRecord = {
 };
 
 export const DEFAULT_SETTINGS: PluginSettings = {
+  baseFolder: 'kleinanzeigen',
   aiProvider: 'anthropic',
   aiProviders: {
     anthropic: { apiKey: '', model: 'claude-haiku-4-5-20251001' },

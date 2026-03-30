@@ -944,6 +944,17 @@
   padding-left: 2px;
 }
 
+.ka-folder-display {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  font-size: 0.9em;
+  font-family: var(--font-monospace);
+}
+
 .ka-setting-toggle {
   justify-content: space-between;
 }

@@ -1,0 +1,44 @@
+import type { Listing, Status, ArticleTemplate } from '../models/listing';
+
+export type FilterStatus = 'Alle' | 'Archiv' | Status;
+export type Tab = 'overview' | 'stats' | 'settings';
+export type StatsPeriod = 'monthly' | 'yearly';
+export type SortColumn = 'artikel' | 'preis' | 'versand' | 'eingestellt' | 'status';
+export type SortDirection = 'asc' | 'desc';
+
+export interface DashboardCallbacks {
+  onSold: (listing: Listing) => void;
+  onShip: (listing: Listing) => void;
+  onRelist: (listing: Listing) => void;
+  onNewItem: () => void;
+  onEditListing: (listing: Listing) => void;
+}
+
+export interface OverviewState {
+  filter: FilterStatus;
+  searchQuery: string;
+  expandedListing: Listing | null;
+  sortColumn: SortColumn;
+  sortDirection: SortDirection;
+  selectedPaths: Set<string>;
+}
+
+export interface StatsState {
+  statsPeriod: StatsPeriod;
+}
+
+export interface SettingsState {
+  editingTemplate: ArticleTemplate | null;
+}
+
+export interface DropdownState {
+  closeHandler: (() => void) | null;
+}
+
+export interface DashboardActions {
+  render: () => void;
+  refresh: () => void;
+  refreshAfterWrite: () => void;
+  transitionStatus: (listing: Listing, status: Status) => Promise<void>;
+  undoStatus: (listing: Listing, targetStatus: Status) => Promise<void>;
+}

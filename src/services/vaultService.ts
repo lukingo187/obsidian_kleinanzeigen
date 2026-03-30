@@ -1,16 +1,19 @@
-import { App, TFile, TFolder, normalizePath } from 'obsidian';
+import { App, TFile, TFolder, normalizePath, parseYaml } from 'obsidian';
 import { Listing } from '../models/listing';
 
-const BASE_FOLDER = 'kleinanzeigen';
-
 export class VaultService {
-  constructor(private app: App) {}
+  private getBaseFolder: () => string;
+
+  constructor(private app: App, getBaseFolder: () => string) {
+    this.getBaseFolder = getBaseFolder;
+  }
 
   private async ensureFolder(): Promise<void> {
-    const folder = this.app.vault.getAbstractFileByPath(BASE_FOLDER);
+    const base = this.getBaseFolder();
+    const folder = this.app.vault.getAbstractFileByPath(base);
     if (!folder) {
       try {
-        await this.app.vault.createFolder(BASE_FOLDER);
+        await this.app.vault.createFolder(base);
       } catch { /* folder created by concurrent call */ }
     }
   }
@@ -18,12 +21,13 @@ export class VaultService {
   async createListing(listing: Listing): Promise<TFile> {
     await this.ensureFolder();
 
+    const base = this.getBaseFolder();
     const safeName = listing.artikel.replace(/[\\/:*?"<>|]/g, '_');
-    let filePath = normalizePath(`${BASE_FOLDER}/${safeName}.md`);
+    let filePath = normalizePath(`${base}/${safeName}.md`);
 
     let counter = 1;
     while (this.app.vault.getAbstractFileByPath(filePath)) {
-      filePath = normalizePath(`${BASE_FOLDER}/${safeName} ${counter}.md`);
+      filePath = normalizePath(`${base}/${safeName} ${counter}.md`);
       counter++;
     }
 
@@ -53,10 +57,7 @@ export class VaultService {
   async getAllListings(): Promise<Listing[]> {
     const listings: Listing[] = [];
 
-    let baseFolder = this.app.vault.getAbstractFileByPath(BASE_FOLDER);
-    if (!(baseFolder instanceof TFolder)) {
-      baseFolder = this.app.vault.getAbstractFileByPath('Kleinanzeigen');
-    }
+    const baseFolder = this.app.vault.getAbstractFileByPath(this.getBaseFolder());
 
     if (!(baseFolder instanceof TFolder)) return listings;
 
@@ -123,30 +124,11 @@ export class VaultService {
     const match = content.match(/^---\n([\s\S]*?)\n---/);
     if (!match) return null;
 
-    const fm: Record<string, any> = {};
-    for (const line of match[1].split('\n')) {
-      const idx = line.indexOf(':');
-      if (idx === -1) continue;
-      const key = line.slice(0, idx).trim();
-      if (!key) continue;
-      let value: any = line.slice(idx + 1).trim();
-
-      // Remove surrounding quotes and unescape newlines — keep as string
-      if (value.startsWith('"') && value.endsWith('"')) {
-        value = value.slice(1, -1).replace(/\\n/g, '\n');
-      }
-      // Parse booleans
-      else if (value === 'true') value = true;
-      else if (value === 'false') value = false;
-      // Parse numbers — only for unquoted values that look like plain numbers
-      // (no leading zeros except "0" itself, to preserve tracking numbers)
-      else if (value !== '' && /^-?(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value)) {
-        value = Number(value);
-      }
-
-      fm[key] = value;
+    try {
+      return parseYaml(match[1]) ?? null;
+    } catch {
+      return null;
     }
-    return fm;
   }
 
   private buildFileContent(listing: Listing): string {
