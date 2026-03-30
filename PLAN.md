@@ -238,6 +238,13 @@ Extend the plugin to also track eBay listings alongside Kleinanzeigen.
 - Support für Bundles (mehrere Artikel zusammen verkaufen)
 - Fotos pro Artikel tracken
 
+### Versand & Porto-System überarbeiten
+- **Konfigurierbare Porto-Preise**: Die aktuellen DHL/Deutsche Post Preise bleiben als Standard, aber Nutzer können Preise anpassen, neue hinzufügen oder Standard-Einträge löschen (über Einstellungen)
+- **Versanddienstleister-Auswahl**: Neues Feld `carrier` in der Versand-Maske (ShipModal) — Dropdown mit Auswahl des Dienstleisters. Standard: DHL/Deutsche Post
+- **Porto-Preise pro Carrier**: Jeder Porto-Eintrag ist einem Carrier zugeordnet. Beim Versand zeigt das Porto-Dropdown nur die Preise des gewählten Carriers
+- **Unterstützte Carrier (initial)**: DHL/Deutsche Post (inkl. Briefe), Hermes, DPD — erweiterbar durch Nutzer
+- **Datenmodell-Änderungen**: `PortoOption` wird zu `{ name: string, price: number, carrier: string }`, gespeichert in PluginSettings mit editierbaren Defaults
+
 ---
 
 ## Workflows
