@@ -86,12 +86,12 @@ Date: 2026-03-27
 
 **Fixed:** All catch blocks now use proper `instanceof Error` checks with `String(e)` fallback.
 
-### S2. No Test Coverage
-Zero test files. Key pure functions that are easy to test:
-- `statsService.ts` — `calculateStats`, `calculateMonthlyStats`, `calculateExtendedStats`
-- `formatting.ts` — `formatDate`, `formatCurrency`, `parsePortoPrice`
-- `templateService.ts` — CRUD operations
-- `vaultService.ts` — `parseFrontmatter`, `buildFileContent`
+### ~~S2. No Test Coverage~~ ✅
+
+**Fixed:** 33 tests across 3 test files using Vitest:
+- `tests/formatting.test.ts` — `formatDate`, `formatDateDE`, `formatCurrency`, `parsePortoPrice`
+- `tests/statsService.test.ts` — `calculateStats`, `calculateExtendedStats`, `calculateMonthlyStats`, `calculateYearlyStats`
+- `tests/templateService.test.ts` — CRUD operations (`create`, `update`, `delete`, `getById`)
 
 ### ~~S3. onunload() is Empty~~ ✅
 **File:** `src/main.ts`
