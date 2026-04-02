@@ -1,11 +1,12 @@
 import { App, Modal, Setting } from 'obsidian';
-import { Listing, PORTO_OPTIONS, PortoOption } from '../models/listing';
+import { Listing, DEFAULT_CARRIER } from '../models/listing';
 import { todayString } from '../utils/formatting';
+import { PortoState, renderCarrierPortoUI } from '../utils/portoUI';
 
 export class ShipModal extends Modal {
   private listing: Listing;
   private anschrift = '';
-  private porto: PortoOption;
+  private portoState: PortoState;
   private sendungsnummer = '';
   private labelErstellt = false;
   private onSubmit: (listing: Listing) => void;
@@ -14,7 +15,11 @@ export class ShipModal extends Modal {
     super(app);
     this.listing = { ...listing };
     this.anschrift = listing.anschrift ?? '';
-    this.porto = listing.porto ?? PORTO_OPTIONS[0];
+    this.portoState = {
+      carrier: listing.carrier ?? DEFAULT_CARRIER,
+      portoName: listing.porto_name,
+      portoPrice: listing.porto_price,
+    };
     this.sendungsnummer = listing.sendungsnummer ?? '';
     this.labelErstellt = listing.label_erstellt;
     this.onSubmit = onSubmit;
@@ -36,28 +41,17 @@ export class ShipModal extends Modal {
         ta.inputEl.addClass('ka-textarea');
       });
 
-    new Setting(contentEl)
-      .setName('Porto')
-      .addDropdown(dd => {
-        for (const p of PORTO_OPTIONS) {
-          dd.addOption(p, p);
-        }
-        dd.setValue(this.porto);
-        dd.onChange(v => this.porto = v as PortoOption);
-      });
-
-    new Setting(contentEl)
-      .setName('Sendungsnummer')
-      .addText(text => text
-        .setPlaceholder('Tracking-Nummer')
-        .setValue(this.sendungsnummer)
-        .onChange(v => this.sendungsnummer = v));
-
-    new Setting(contentEl)
-      .setName('Label gedruckt')
-      .addToggle(toggle => toggle
-        .setValue(this.labelErstellt)
-        .onChange(v => this.labelErstellt = v));
+    renderCarrierPortoUI({
+      container: contentEl,
+      state: this.portoState,
+      showTracking: true,
+      trackingState: {
+        sendungsnummer: this.sendungsnummer,
+        labelErstellt: this.labelErstellt,
+        onSendungsnummerChange: v => this.sendungsnummer = v,
+        onLabelChange: v => this.labelErstellt = v,
+      },
+    });
 
     new Setting(contentEl)
       .addButton(btn => btn
@@ -70,7 +64,9 @@ export class ShipModal extends Modal {
           this.listing.verschickt = true;
           this.listing.verschickt_am = todayString();
           this.listing.anschrift = this.anschrift.trim();
-          this.listing.porto = this.porto;
+          this.listing.carrier = this.portoState.carrier;
+          this.listing.porto_name = this.portoState.portoName;
+          this.listing.porto_price = this.portoState.portoPrice;
           this.listing.sendungsnummer = this.sendungsnummer || undefined;
           this.listing.label_erstellt = this.labelErstellt;
 

@@ -1,5 +1,6 @@
 import { App, FuzzySuggestModal, Notice, TFolder, setIcon } from 'obsidian';
-import { AIProvider, DEFAULT_MODELS, ZUSTAND_OPTIONS, Zustand, PORTO_OPTIONS, PortoOption, Preisart } from '../models/listing';
+import { AIProvider, DEFAULT_MODELS, ZUSTAND_OPTIONS, Zustand, Preisart } from '../models/listing';
+import { renderCarrierPortoSettingsUI } from '../utils/portoUI';
 import { AIService } from '../services/aiService';
 import { TemplateService } from '../services/templateService';
 import { ConfirmModal } from '../modals/confirmModal';
@@ -23,7 +24,7 @@ function renderTemplatesSettings(wrap: HTMLElement, app: App, plugin: Kleinanzei
       if (tpl.artikel) meta.push(tpl.artikel);
       if (tpl.preis) meta.push(`${tpl.preis}€`);
       if (tpl.zustand) meta.push(tpl.zustand);
-      if (tpl.porto) meta.push(tpl.porto);
+      if (tpl.carrier) meta.push(tpl.carrier);
       if (tpl.preisart) meta.push(tpl.preisart);
       if (meta.length > 0) {
         info.createSpan({ text: meta.join(' · '), cls: 'ka-template-meta' });
@@ -89,7 +90,7 @@ function renderTemplateForm(container: HTMLElement, plugin: KleinanzeigenPlugin,
   });
 
   addSettingRow(form, 'Zustand', el => {
-    const select = el.createEl('select', { cls: 'ka-setting-select' });
+    const select = el.createEl('select', { cls: 'dropdown' });
     select.createEl('option', { value: '', text: '— beliebig —' });
     for (const z of ZUSTAND_OPTIONS) {
       const opt = select.createEl('option', { value: z, text: z });
@@ -101,7 +102,7 @@ function renderTemplateForm(container: HTMLElement, plugin: KleinanzeigenPlugin,
   });
 
   addSettingRow(form, 'Preisart', el => {
-    const select = el.createEl('select', { cls: 'ka-setting-select' });
+    const select = el.createEl('select', { cls: 'dropdown' });
     select.createEl('option', { value: '', text: '— beliebig —' });
     for (const p of ['VB', 'Festpreis'] as Preisart[]) {
       const opt = select.createEl('option', { value: p, text: p });
@@ -113,15 +114,16 @@ function renderTemplateForm(container: HTMLElement, plugin: KleinanzeigenPlugin,
   });
 
   addSettingRow(form, 'Versand', el => {
-    const select = el.createEl('select', { cls: 'ka-setting-select' });
-    select.createEl('option', { value: '', text: '— beliebig —' });
-    for (const p of PORTO_OPTIONS) {
-      const opt = select.createEl('option', { value: p, text: p });
-      if (tpl.porto === p) opt.selected = true;
-    }
-    select.addEventListener('change', () => {
-      tpl.porto = select.value ? select.value as PortoOption : undefined;
-    });
+    renderCarrierPortoSettingsUI(
+      el,
+      { carrier: tpl.carrier ?? '', portoName: tpl.porto_name, portoPrice: tpl.porto_price },
+      (state) => {
+        tpl.carrier = state.carrier || undefined;
+        tpl.porto_name = state.portoName;
+        tpl.porto_price = state.portoPrice;
+      },
+      { allowEmpty: true },
+    );
   });
 
   const descRow = form.createDiv({ cls: 'ka-setting-item ka-setting-item-vertical' });
@@ -145,7 +147,9 @@ function renderTemplateForm(container: HTMLElement, plugin: KleinanzeigenPlugin,
         preis: tpl.preis,
         zustand: tpl.zustand,
         preisart: tpl.preisart,
-        porto: tpl.porto,
+        carrier: tpl.carrier,
+        porto_name: tpl.porto_name,
+        porto_price: tpl.porto_price,
         beschreibungsvorlage: tpl.beschreibungsvorlage,
       });
     } else {
@@ -170,7 +174,7 @@ function renderAISettings(wrap: HTMLElement, plugin: KleinanzeigenPlugin, action
   section.createDiv({ cls: 'ka-settings-section-desc', text: 'Wähle einen KI-Anbieter und hinterlege deinen API-Key für automatische Beschreibungen.' });
 
   addSettingRow(section, 'Anbieter', el => {
-    const select = el.createEl('select', { cls: 'ka-setting-select' });
+    const select = el.createEl('select', { cls: 'dropdown' });
     const providers: [AIProvider, string][] = [
       ['anthropic', 'Anthropic (Claude)'],
       ['openai', 'OpenAI (GPT)'],
@@ -187,7 +191,7 @@ function renderAISettings(wrap: HTMLElement, plugin: KleinanzeigenPlugin, action
   });
 
   addSettingRow(section, 'Modell', el => {
-    const select = el.createEl('select', { cls: 'ka-setting-select' });
+    const select = el.createEl('select', { cls: 'dropdown' });
     for (const model of DEFAULT_MODELS[settings.aiProvider]) {
       const opt = select.createEl('option', { text: model.label, value: model.id });
       if (settings.aiProviders[settings.aiProvider].model === model.id) opt.selected = true;

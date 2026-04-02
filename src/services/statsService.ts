@@ -1,5 +1,4 @@
 import { Listing } from '../models/listing';
-import { parsePortoPrice } from '../utils/formatting';
 
 export interface ExtendedStats {
   avgSaleDurationDays: number | null;
@@ -26,6 +25,51 @@ export interface PeriodStats {
   gewinn: number;
 }
 
+function sumFinancials(listings: Listing[]): { umsatz: number; portokosten: number } {
+  let umsatz = 0;
+  let portokosten = 0;
+  for (const l of listings) {
+    if (l.verkauft_fuer != null) umsatz += l.verkauft_fuer;
+    if (l.porto_price != null) portokosten += l.porto_price;
+  }
+  return { umsatz, portokosten };
+}
+
+function calculatePeriodStats(
+  listings: Listing[],
+  keyLength: number,
+  labelFn: (key: string) => string,
+): PeriodStats[] {
+  const periods = new Map<string, { eingestellt: number; verkauft: Listing[] }>();
+
+  for (const l of listings) {
+    if (l.eingestellt_am) {
+      const key = l.eingestellt_am.slice(0, keyLength);
+      if (!periods.has(key)) periods.set(key, { eingestellt: 0, verkauft: [] });
+      periods.get(key)!.eingestellt++;
+    }
+    if (l.verkauft && l.verkauft_am) {
+      const key = l.verkauft_am.slice(0, keyLength);
+      if (!periods.has(key)) periods.set(key, { eingestellt: 0, verkauft: [] });
+      periods.get(key)!.verkauft.push(l);
+    }
+  }
+
+  const sorted = [...periods.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+
+  return sorted.map(([key, data]) => {
+    const { umsatz, portokosten } = sumFinancials(data.verkauft);
+    return {
+      label: labelFn(key),
+      eingestellt: data.eingestellt,
+      verkauft: data.verkauft.length,
+      umsatz,
+      portokosten,
+      gewinn: umsatz - portokosten,
+    };
+  });
+}
+
 export function calculateStats(listings: Listing[]): Stats {
   let activeCount = 0;
   let soldCount = 0;
@@ -45,12 +89,12 @@ export function calculateStats(listings: Listing[]): Stats {
 
     if (l.verkauft) totalSoldCount++;
 
-    if (l.verkauft_fuer != null && typeof l.verkauft_fuer === 'number') {
+    if (l.verkauft_fuer != null) {
       totalRevenue += l.verkauft_fuer;
     }
 
-    if (l.porto && l.verkauft) {
-      totalShippingCost += parsePortoPrice(l.porto);
+    if (l.porto_price != null && l.verkauft) {
+      totalShippingCost += l.porto_price;
     }
   }
 
@@ -67,7 +111,6 @@ export function calculateStats(listings: Listing[]): Stats {
 }
 
 export function calculateExtendedStats(listings: Listing[]): ExtendedStats {
-  // Avg sale duration: days from eingestellt_am to verkauft_am
   const durations: number[] = [];
   for (const l of listings) {
     if (l.verkauft && l.eingestellt_am && l.verkauft_am) {
@@ -83,7 +126,6 @@ export function calculateExtendedStats(listings: Listing[]): ExtendedStats {
     ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
     : null;
 
-  // Avg sale price
   const salePrices = listings
     .filter(l => l.verkauft && l.verkauft_fuer != null)
     .map(l => l.verkauft_fuer as number);
@@ -94,93 +136,15 @@ export function calculateExtendedStats(listings: Listing[]): ExtendedStats {
   return { avgSaleDurationDays, avgSalePrice };
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+
 export function calculateMonthlyStats(listings: Listing[]): PeriodStats[] {
-  const months = new Map<string, { eingestellt: Listing[]; verkauft: Listing[] }>();
-
-  for (const l of listings) {
-    // Count by eingestellt_am
-    if (l.eingestellt_am) {
-      const key = l.eingestellt_am.slice(0, 7); // "2026-03"
-      if (!months.has(key)) months.set(key, { eingestellt: [], verkauft: [] });
-      months.get(key)!.eingestellt.push(l);
-    }
-
-    // Count by verkauft_am
-    if (l.verkauft && l.verkauft_am) {
-      const key = l.verkauft_am.slice(0, 7);
-      if (!months.has(key)) months.set(key, { eingestellt: [], verkauft: [] });
-      months.get(key)!.verkauft.push(l);
-    }
-  }
-
-  // Sort by month descending (newest first)
-  const sorted = [...months.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-
-  return sorted.map(([monthKey, data]) => {
-    const [year, month] = monthKey.split('-');
-    const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
-    const label = `${monthNames[parseInt(month) - 1]} ${year}`;
-
-    let umsatz = 0;
-    let portokosten = 0;
-    for (const l of data.verkauft) {
-      if (l.verkauft_fuer != null && typeof l.verkauft_fuer === 'number') {
-        umsatz += l.verkauft_fuer;
-      }
-      if (l.porto) {
-        portokosten += parsePortoPrice(l.porto);
-      }
-    }
-
-    return {
-      label,
-      eingestellt: data.eingestellt.length,
-      verkauft: data.verkauft.length,
-      umsatz,
-      portokosten,
-      gewinn: umsatz - portokosten,
-    };
+  return calculatePeriodStats(listings, 7, key => {
+    const [year, month] = key.split('-');
+    return `${MONTH_NAMES[parseInt(month) - 1]} ${year}`;
   });
 }
 
 export function calculateYearlyStats(listings: Listing[]): PeriodStats[] {
-  const years = new Map<string, { eingestellt: Listing[]; verkauft: Listing[] }>();
-
-  for (const l of listings) {
-    if (l.eingestellt_am) {
-      const key = l.eingestellt_am.slice(0, 4);
-      if (!years.has(key)) years.set(key, { eingestellt: [], verkauft: [] });
-      years.get(key)!.eingestellt.push(l);
-    }
-
-    if (l.verkauft && l.verkauft_am) {
-      const key = l.verkauft_am.slice(0, 4);
-      if (!years.has(key)) years.set(key, { eingestellt: [], verkauft: [] });
-      years.get(key)!.verkauft.push(l);
-    }
-  }
-
-  const sorted = [...years.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-
-  return sorted.map(([year, data]) => {
-    let umsatz = 0;
-    let portokosten = 0;
-    for (const l of data.verkauft) {
-      if (l.verkauft_fuer != null && typeof l.verkauft_fuer === 'number') {
-        umsatz += l.verkauft_fuer;
-      }
-      if (l.porto) {
-        portokosten += parsePortoPrice(l.porto);
-      }
-    }
-
-    return {
-      label: year,
-      eingestellt: data.eingestellt.length,
-      verkauft: data.verkauft.length,
-      umsatz,
-      portokosten,
-      gewinn: umsatz - portokosten,
-    };
-  });
+  return calculatePeriodStats(listings, 4, key => key);
 }

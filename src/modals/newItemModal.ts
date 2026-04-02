@@ -1,6 +1,7 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
-import { Listing, ZUSTAND_OPTIONS, Zustand, Preisart, PORTO_OPTIONS, PortoOption, ArticleTemplate } from '../models/listing';
+import { Listing, ZUSTAND_OPTIONS, Zustand, Preisart, ArticleTemplate, DEFAULT_CARRIER } from '../models/listing';
 import { todayString } from '../utils/formatting';
+import { PortoState, renderCarrierPortoUI } from '../utils/portoUI';
 import type KleinanzeigenPlugin from '../main';
 
 export class NewItemModal extends Modal {
@@ -8,7 +9,7 @@ export class NewItemModal extends Modal {
   private zustand: Zustand = 'Gut';
   private preis = 0;
   private preisart: Preisart = 'VB';
-  private porto: PortoOption | undefined;
+  private portoState: PortoState = { carrier: DEFAULT_CARRIER, portoName: undefined, portoPrice: undefined };
   private beschreibung = '';
   private onSubmit: (listing: Listing) => void;
   private plugin: KleinanzeigenPlugin;
@@ -18,7 +19,7 @@ export class NewItemModal extends Modal {
   private preisInput!: HTMLInputElement;
   private zustandSelect!: HTMLSelectElement;
   private preisartSelect!: HTMLSelectElement;
-  private portoSelect!: HTMLSelectElement;
+  private portoRerender!: () => void;
   private descTextArea!: HTMLTextAreaElement;
 
   constructor(app: App, plugin: KleinanzeigenPlugin, onSubmit: (listing: Listing) => void) {
@@ -55,7 +56,7 @@ export class NewItemModal extends Modal {
     section.createEl('p', { text: 'Template verwenden:', cls: 'ka-ai-hint' });
 
     const row = section.createDiv({ cls: 'ka-template-select-row' });
-    const select = row.createEl('select', { cls: 'ka-setting-select' });
+    const select = row.createEl('select', { cls: 'dropdown' });
     select.createEl('option', { value: '', text: '— kein Template —' });
     for (const tpl of templates) {
       select.createEl('option', { value: tpl.id, text: tpl.name });
@@ -82,9 +83,11 @@ export class NewItemModal extends Modal {
         this.preisart = selected.preisart;
         this.preisartSelect.value = selected.preisart;
       }
-      if (selected.porto) {
-        this.porto = selected.porto;
-        this.portoSelect.value = selected.porto;
+      if (selected.carrier) {
+        this.portoState.carrier = selected.carrier;
+        this.portoState.portoName = selected.porto_name;
+        this.portoState.portoPrice = selected.porto_price;
+        this.portoRerender();
       }
       if (selected.beschreibungsvorlage) {
         this.beschreibung = selected.beschreibungsvorlage;
@@ -151,12 +154,11 @@ export class NewItemModal extends Modal {
         }
 
         // Match porto
-        if (parsed.porto) {
-          const matchedPorto = PORTO_OPTIONS.find(p => p === parsed.porto);
-          if (matchedPorto) {
-            this.porto = matchedPorto;
-            this.portoSelect.value = matchedPorto;
-          }
+        if (parsed.carrier) {
+          this.portoState.carrier = parsed.carrier;
+          this.portoState.portoName = parsed.porto_name;
+          this.portoState.portoPrice = parsed.porto_price;
+          this.portoRerender();
         }
 
         // Fill description
@@ -209,16 +211,11 @@ export class NewItemModal extends Modal {
         this.preisartSelect = dd.selectEl;
       });
 
-    new Setting(container)
-      .setName('Versand')
-      .addDropdown(dd => {
-        dd.addOption('', '— kein Versand —');
-        for (const p of PORTO_OPTIONS) {
-          dd.addOption(p, p);
-        }
-        dd.onChange(v => this.porto = v ? v as PortoOption : undefined);
-        this.portoSelect = dd.selectEl;
-      });
+    const { rerender } = renderCarrierPortoUI({
+      container,
+      state: this.portoState,
+    });
+    this.portoRerender = rerender;
 
     new Setting(container)
       .setName('Beschreibung')
@@ -252,7 +249,9 @@ export class NewItemModal extends Modal {
             status: 'Aktiv',
             preis: this.preis,
             preisart: this.preisart,
-            porto: this.porto,
+            carrier: this.portoState.carrier,
+            porto_name: this.portoState.portoName,
+            porto_price: this.portoState.portoPrice,
             eingestellt_am: today,
             erstmals_eingestellt_am: today,
             eingestellt_count: 1,

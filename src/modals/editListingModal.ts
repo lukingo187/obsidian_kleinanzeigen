@@ -1,5 +1,6 @@
 import { App, Modal, Setting } from 'obsidian';
-import { Listing, ZUSTAND_OPTIONS, Zustand, Preisart, PORTO_OPTIONS, PortoOption } from '../models/listing';
+import { Listing, ZUSTAND_OPTIONS, Zustand, Preisart, DEFAULT_CARRIER } from '../models/listing';
+import { PortoState, renderCarrierPortoUI } from '../utils/portoUI';
 
 export class EditListingModal extends Modal {
   private listing: Listing;
@@ -7,7 +8,7 @@ export class EditListingModal extends Modal {
   private zustand: Zustand;
   private preis: number;
   private preisart: Preisart;
-  private porto: PortoOption | undefined;
+  private portoState: PortoState;
   private beschreibung: string;
   private onSubmit: (listing: Listing) => void;
 
@@ -18,7 +19,11 @@ export class EditListingModal extends Modal {
     this.zustand = listing.zustand;
     this.preis = listing.preis;
     this.preisart = listing.preisart;
-    this.porto = listing.porto;
+    this.portoState = {
+      carrier: listing.carrier ?? DEFAULT_CARRIER,
+      portoName: listing.porto_name,
+      portoPrice: listing.porto_price,
+    };
     this.beschreibung = listing.beschreibung ?? '';
     this.onSubmit = onSubmit;
   }
@@ -57,16 +62,10 @@ export class EditListingModal extends Modal {
         dd.onChange(v => this.preisart = v as Preisart);
       });
 
-    new Setting(contentEl)
-      .setName('Versand')
-      .addDropdown(dd => {
-        dd.addOption('', '— kein Versand —');
-        for (const p of PORTO_OPTIONS) {
-          dd.addOption(p, p);
-        }
-        dd.setValue(this.porto ?? '');
-        dd.onChange(v => this.porto = v ? v as PortoOption : undefined);
-      });
+    renderCarrierPortoUI({
+      container: contentEl,
+      state: this.portoState,
+    });
 
     new Setting(contentEl)
       .setName('Beschreibung')
@@ -88,7 +87,9 @@ export class EditListingModal extends Modal {
           this.listing.zustand = this.zustand;
           this.listing.preis = this.preis;
           this.listing.preisart = this.preisart;
-          this.listing.porto = this.porto;
+          this.listing.carrier = this.portoState.carrier;
+          this.listing.porto_name = this.portoState.portoName;
+          this.listing.porto_price = this.portoState.portoPrice;
           this.listing.beschreibung = this.beschreibung || undefined;
 
           this.onSubmit(this.listing);

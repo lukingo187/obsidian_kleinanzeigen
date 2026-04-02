@@ -110,7 +110,9 @@ export class VaultService {
       bezahlt: fm.bezahlt ?? false,
       bezahlt_am: fm.bezahlt_am,
       bezahlart: fm.bezahlart,
-      porto: fm.porto,
+      carrier: fm.carrier,
+      porto_name: fm.porto_name,
+      porto_price: fm.porto_price != null ? Number(fm.porto_price) : undefined,
       anschrift: fm.anschrift,
       label_erstellt: fm.label_erstellt ?? false,
       sendungsnummer: fm.sendungsnummer != null ? String(fm.sendungsnummer) : undefined,
@@ -153,7 +155,9 @@ export class VaultService {
     if (listing.bezahlt_am) lines.push(`bezahlt_am: "${listing.bezahlt_am}"`);
     if (listing.bezahlart) lines.push(`bezahlart: "${listing.bezahlart}"`);
 
-    if (listing.porto) lines.push(`porto: "${listing.porto}"`);
+    if (listing.carrier) lines.push(`carrier: "${listing.carrier}"`);
+    if (listing.porto_name) lines.push(`porto_name: "${listing.porto_name}"`);
+    if (listing.porto_price != null) lines.push(`porto_price: ${listing.porto_price}`);
     if (listing.anschrift) lines.push(`anschrift: "${listing.anschrift.replace(/\n/g, '\\n')}"`);
     lines.push(`label_erstellt: ${listing.label_erstellt}`);
     if (listing.sendungsnummer) lines.push(`sendungsnummer: "${listing.sendungsnummer}"`);

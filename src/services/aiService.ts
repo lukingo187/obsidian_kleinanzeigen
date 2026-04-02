@@ -1,10 +1,13 @@
 import { requestUrl } from 'obsidian';
-import { AIProvider, PluginSettings, ZUSTAND_OPTIONS, PORTO_OPTIONS, MODEL_PRICING } from '../models/listing';
+import { AIProvider, PluginSettings, ZUSTAND_OPTIONS, CARRIERS, CARRIER_OPTIONS, MODEL_PRICING } from '../models/listing';
+import { formatCurrency } from '../utils/formatting';
 
 export interface ParsedListing {
   artikel: string;
   zustand: string;
-  porto?: string;
+  carrier?: string;
+  porto_name?: string;
+  porto_price?: number;
   beschreibung: string;
 }
 
@@ -65,13 +68,19 @@ Nutzereingabe:
 "${userText}"
 
 Gültige Zustand-Werte: ${ZUSTAND_OPTIONS.join(', ')}
-Gültige Porto-Optionen: ${PORTO_OPTIONS.join(', ')}
+Versanddienstleister: ${CARRIERS.join(', ')}
+Porto-Optionen pro Carrier:
+${Object.entries(CARRIER_OPTIONS).map(([carrier, options]) =>
+  `${carrier}: ${options.map(o => `${o.name} (${formatCurrency(o.price)})`).join(', ')}`
+).join('\n')}
 
 Antworte NUR mit einem JSON-Objekt (kein Markdown, kein Code-Block), mit diesen Feldern:
 {
   "artikel": "Kurzer, prägnanter Artikelname/Titel",
   "zustand": "Einer der gültigen Zustand-Werte (am besten passend)",
-  "porto": "Eine der gültigen Porto-Optionen falls erwähnt, sonst null",
+  "carrier": "Versanddienstleister (DHL/Deutsche Post, Hermes, Abholung, Sonstiges) falls erwähnt, sonst null",
+  "porto_name": "Name der Porto-Option (z.B. Großbrief, Päckchen S) falls erwähnt, sonst null",
+  "porto_price": "Preis als Zahl (z.B. 1.80) falls erwähnt, sonst null",
   "beschreibung": "Verkaufsbeschreibung für Kleinanzeigen (3-5 Sätze, freundlich, professionell, Zustand erwähnen, kein Preis, keine Emojis)"
 }
 
@@ -90,7 +99,9 @@ ${footerInstruction}`;
       return {
         artikel: parsed.artikel ?? '',
         zustand: parsed.zustand ?? 'Gut',
-        porto: parsed.porto ?? undefined,
+        carrier: parsed.carrier ?? undefined,
+        porto_name: parsed.porto_name ?? undefined,
+        porto_price: parsed.porto_price != null ? Number(parsed.porto_price) : undefined,
         beschreibung: parsed.beschreibung ?? '',
       };
     } catch {

@@ -1,13 +1,13 @@
 import { Notice } from 'obsidian';
 import { Listing } from '../models/listing';
-import { formatCurrency, formatDateDE } from '../utils/formatting';
+import { formatCurrency, formatDateDE, formatPortoDisplay } from '../utils/formatting';
 import type { Stats } from './statsService';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export class ExportService {
   static generateCSV(listings: Listing[]): string {
-    const headers = ['Artikel', 'Zustand', 'Preis', 'Preisart', 'Versand', 'Eingestellt am', 'Status', 'Verkauft für', 'Verkauft am', 'Bezahlart'];
+    const headers = ['Artikel', 'Zustand', 'Preis', 'Preisart', 'Carrier', 'Porto', 'Portopreis', 'Eingestellt am', 'Status', 'Verkauft für', 'Verkauft am', 'Bezahlart'];
     const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
 
     const rows = listings.map(l => [
@@ -15,7 +15,9 @@ export class ExportService {
       l.zustand,
       l.preis.toString(),
       l.preisart,
-      l.porto ?? '',
+      l.carrier ?? '',
+      l.porto_name ?? '',
+      l.porto_price != null ? l.porto_price.toString() : '',
       l.eingestellt_am ?? '',
       l.status,
       l.verkauft_fuer?.toString() ?? '',
@@ -59,12 +61,13 @@ export class ExportService {
 
     autoTable(doc, {
       startY,
-      head: [['Artikel', 'Zustand', 'Preis', 'Versand', 'Eingestellt', 'Status', 'Verkauft für']],
+      head: [['Artikel', 'Zustand', 'Preis', 'Carrier', 'Porto', 'Eingestellt', 'Status', 'Verkauft für']],
       body: listings.map(l => [
         l.artikel,
         l.zustand,
         `${formatCurrency(l.preis)} ${l.preisart}`,
-        l.porto ?? '\u2014',
+        l.carrier ?? '\u2014',
+        formatPortoDisplay(l.carrier, l.porto_name, l.porto_price),
         l.eingestellt_am ? formatDateDE(l.eingestellt_am) : '',
         l.status,
         l.verkauft_fuer != null ? formatCurrency(l.verkauft_fuer) : '',

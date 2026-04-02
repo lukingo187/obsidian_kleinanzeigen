@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatDate, formatDateDE, formatCurrency, parsePortoPrice } from '../src/utils/formatting';
+import { formatDate, formatDateDE, formatCurrency, formatPortoDisplay } from '../src/utils/formatting';
 
 describe('formatDate', () => {
   it('formats a date as YYYY-MM-DD', () => {
@@ -43,20 +43,24 @@ describe('formatCurrency', () => {
   });
 });
 
-describe('parsePortoPrice', () => {
-  it('extracts price from porto string', () => {
-    expect(parsePortoPrice('Paket 2kg (6,19€)')).toBe(6.19);
+describe('formatPortoDisplay', () => {
+  it('formats a carrier preset with name and price', () => {
+    expect(formatPortoDisplay('DHL/Deutsche Post', 'Großbrief', 1.80)).toBe('Großbrief (1,80€)');
   });
 
-  it('handles Abholung', () => {
-    expect(parsePortoPrice('Abholung (0,00€)')).toBe(0);
+  it('formats Abholung', () => {
+    expect(formatPortoDisplay('Abholung', 'Abholung', 0)).toBe('Abholung');
   });
 
-  it('returns 0 for unrecognized format', () => {
-    expect(parsePortoPrice('Selbstabholung')).toBe(0);
+  it('formats Sonstiges with name', () => {
+    expect(formatPortoDisplay('Sonstiges', 'GLS Express', 4.50)).toBe('GLS Express (4,50€)');
   });
 
-  it('extracts price from Großbrief', () => {
-    expect(parsePortoPrice('Großbrief (1,80€)')).toBe(1.8);
+  it('formats Sonstiges without name', () => {
+    expect(formatPortoDisplay('Sonstiges', '', 3.00)).toBe('Sonstiges (3,00€)');
+  });
+
+  it('returns dash when no carrier is set', () => {
+    expect(formatPortoDisplay(undefined, undefined, undefined)).toBe('—');
   });
 });

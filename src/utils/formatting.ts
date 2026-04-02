@@ -21,8 +21,13 @@ export function todayString(): string {
   return formatDate(new Date());
 }
 
-export function parsePortoPrice(porto: string): number {
-  const match = porto.match(/\((\d+,\d+)€\)/);
-  if (!match) return 0;
-  return parseFloat(match[1].replace(',', '.'));
+export function formatPortoDisplay(
+  carrier?: string,
+  portoName?: string,
+  portoPrice?: number,
+): string {
+  if (!carrier) return '—';
+  if (carrier === 'Abholung') return 'Abholung';
+  const name = portoName || carrier;
+  return `${name} (${formatCurrency(portoPrice ?? 0)})`;
 }

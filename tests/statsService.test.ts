@@ -38,8 +38,8 @@ describe('calculateStats', () => {
 
   it('calculates shipping costs and profit', () => {
     const listings = [
-      makeListing({ verkauft: true, verkauft_fuer: 50, porto: 'Paket 2kg (6,19€)' }),
-      makeListing({ verkauft: true, verkauft_fuer: 20, porto: 'Großbrief (1,80€)' }),
+      makeListing({ verkauft: true, verkauft_fuer: 50, porto_price: 6.19, carrier: 'DHL/Deutsche Post' }),
+      makeListing({ verkauft: true, verkauft_fuer: 20, porto_price: 1.80, carrier: 'DHL/Deutsche Post' }),
     ];
     const stats = calculateStats(listings);
     expect(stats.totalRevenue).toBeCloseTo(70);
@@ -49,7 +49,7 @@ describe('calculateStats', () => {
 
   it('ignores porto for unsold items', () => {
     const listings = [
-      makeListing({ verkauft: false, porto: 'Paket 2kg (6,19€)' }),
+      makeListing({ verkauft: false, porto_price: 6.19 }),
     ];
     const stats = calculateStats(listings);
     expect(stats.totalShippingCost).toBe(0);
@@ -111,7 +111,7 @@ describe('calculateMonthlyStats', () => {
         verkauft: true,
         verkauft_am: '2026-03-10',
         verkauft_fuer: 50,
-        porto: 'Paket 2kg (6,19€)',
+        porto_price: 6.19,
       }),
     ];
     const stats = calculateMonthlyStats(listings);

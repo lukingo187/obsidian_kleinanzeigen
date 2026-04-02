@@ -19,6 +19,8 @@
   --ka-accent-shadow: rgba(124, 77, 255, 0.25);
   --ka-accent-glow: rgba(124, 77, 255, 0.1);
   --ka-color-error: #f44336;
+  overflow-y: auto;
+  padding-bottom: 16px;
 }
 
 /* Dashboard layout */
@@ -377,7 +379,6 @@
 /* Shared focus style for all inputs */
 .ka-search-input:focus,
 .ka-setting-input:focus,
-.ka-setting-select:focus,
 .ka-setting-textarea:focus,
 .ka-textarea:focus,
 .ka-modal .setting-item-control input[type="text"]:focus,
@@ -778,9 +779,7 @@
 }
 
 .ka-modal h2 {
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid var(--background-modifier-border);
+  margin-bottom: 8px;
 }
 
 .ka-textarea {
@@ -863,26 +862,6 @@
   background: var(--background-primary);
   color: var(--text-normal);
   font-size: 0.9em;
-  transition: border-color 150ms ease;
-}
-
-/* focus styles consolidated above */
-
-.ka-setting-select {
-  flex: 1;
-  padding: 6px 30px 6px 12px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  background: var(--background-primary);
-  color: var(--text-normal);
-  font-size: 0.9em;
-  line-height: 1.4;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  cursor: pointer;
   transition: border-color 150ms ease;
 }
 
@@ -1201,9 +1180,6 @@
   align-items: center;
 }
 
-.ka-template-select-row .ka-setting-select {
-  flex: 1;
-}
 
 /* Reset btn */
 .ka-settings-section .ka-reset-btn {
@@ -1211,6 +1187,72 @@
   border-color: var(--ka-color-error);
   color: var(--ka-color-error);
   border-radius: 16px;
+}
+
+/* Align Versand label to top when porto sub-fields expand the control area */
+.setting-item:has(.ka-porto-settings-wrapper) {
+  align-items: flex-start;
+}
+
+.setting-item:has(.ka-porto-settings-wrapper) .setting-item-info {
+  padding-top: 6px;
+}
+
+/* Porto price input — narrower for currency values */
+.ka-porto-price-input {
+  max-width: 100px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Porto wrapper — stacks carrier dropdown + sub-fields vertically */
+.ka-porto-settings-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Ensure inputs fill the wrapper width */
+.ka-porto-settings-wrapper .ka-setting-input {
+  width: 100%;
+}
+
+/* Template context: align label to top */
+.ka-setting-item:has(.ka-porto-settings-wrapper) {
+  align-items: flex-start;
+}
+
+.ka-setting-item:has(.ka-porto-settings-wrapper) > label {
+  padding-top: 6px;
+}
+
+/* Porto sub-fields below the carrier dropdown */
+.ka-porto-sub-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ka-porto-sub-fields:empty {
+  display: none;
+}
+
+/* Sonstiges inline row — Bezeichnung + Preis side by side */
+.ka-porto-inline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ka-porto-inline .ka-setting-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.ka-porto-inline .ka-porto-price-input {
+  flex: 0 0 100px;
+  max-width: 100px;
 }
 
 .ka-settings-section .ka-reset-btn:hover {

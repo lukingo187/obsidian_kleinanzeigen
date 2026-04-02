@@ -4,16 +4,38 @@ export type Zustand = 'Neu mit Etikett' | 'Neu' | 'Sehr Gut' | 'Gut' | 'In Ordnu
 
 export type Status = 'Aktiv' | 'Verkauft' | 'Verschickt' | 'Abgeschlossen' | 'Abgelaufen' | 'Archiviert';
 
-export type PortoOption =
-  | 'Großbrief (1,80€)'
-  | 'Warensendung (2,70€)'
-  | 'Maxibrief (2,90€)'
-  | 'Päckchen S (4,19€)'
-  | 'Päckchen M (5,19€)'
-  | 'Paket 2kg (6,19€)'
-  | 'Paket 5kg (7,69€)'
-  | 'Paket 10kg (10,49€)'
-  | 'Abholung (0,00€)';
+export interface PortoEntry {
+  name: string;
+  price: number;
+}
+
+export type CarrierName = 'DHL/Deutsche Post' | 'Hermes' | 'Abholung' | 'Sonstiges';
+
+export const CARRIERS: CarrierName[] = ['DHL/Deutsche Post', 'Hermes', 'Abholung', 'Sonstiges'];
+
+export const DEFAULT_CARRIER: CarrierName = CARRIERS[0];
+
+export const CARRIER_OPTIONS: Record<string, PortoEntry[]> = {
+  'DHL/Deutsche Post': [
+    { name: 'Großbrief',    price: 1.80 },
+    { name: 'Warensendung', price: 2.70 },
+    { name: 'Maxibrief',    price: 2.90 },
+    { name: 'Päckchen S',   price: 4.19 },
+    { name: 'Päckchen M',   price: 5.19 },
+    { name: 'Paket 2kg',    price: 6.19 },
+    { name: 'Paket 5kg',    price: 7.69 },
+    { name: 'Paket 10kg',  price: 10.49 },
+  ],
+  'Hermes': [
+    { name: 'Päckchen', price: 5.19 },
+    { name: 'S-Paket',  price: 5.79 },
+    { name: 'M-Paket',  price: 6.99 },
+    { name: 'L-Paket',  price: 10.99 },
+  ],
+  'Abholung': [
+    { name: 'Abholung', price: 0 },
+  ],
+};
 
 export interface Listing {
   // Core
@@ -42,7 +64,9 @@ export interface Listing {
   bezahlart?: string;
 
   // Shipping
-  porto?: PortoOption;
+  carrier?: string;
+  porto_name?: string;
+  porto_price?: number;
   anschrift?: string;
   label_erstellt: boolean;
   sendungsnummer?: string;
@@ -61,17 +85,6 @@ export const STATUS_OPTIONS: Status[] = [
   'Aktiv', 'Verkauft', 'Verschickt', 'Abgeschlossen', 'Abgelaufen', 'Archiviert'
 ];
 
-export const PORTO_OPTIONS: PortoOption[] = [
-  'Großbrief (1,80€)',
-  'Warensendung (2,70€)',
-  'Maxibrief (2,90€)',
-  'Päckchen S (4,19€)',
-  'Päckchen M (5,19€)',
-  'Paket 2kg (6,19€)',
-  'Paket 5kg (7,69€)',
-  'Paket 10kg (10,49€)',
-  'Abholung (0,00€)',
-];
 
 // ── Templates ──
 
@@ -82,7 +95,9 @@ export interface ArticleTemplate {
   preis?: number;
   zustand?: Zustand;
   preisart?: Preisart;
-  porto?: PortoOption;
+  carrier?: string;
+  porto_name?: string;
+  porto_price?: number;
   beschreibungsvorlage?: string;
 }
 

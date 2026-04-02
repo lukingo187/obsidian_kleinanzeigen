@@ -3,7 +3,7 @@ import type { Listing, Status } from '../models/listing';
 import { VaultService } from '../services/vaultService';
 import { calculateStats } from '../services/statsService';
 import { ExportService } from '../services/exportService';
-import { formatCurrency, formatDateDE, parsePortoPrice } from '../utils/formatting';
+import { formatCurrency, formatDateDE, formatPortoDisplay } from '../utils/formatting';
 import { ConfirmModal } from '../modals/confirmModal';
 import type { FilterStatus, OverviewState, DashboardCallbacks, DashboardActions, DropdownState } from './dashboard-types';
 import { renderStatusBadge, addSectionHeader, addDetailRow } from './dashboard-helpers';
@@ -42,7 +42,7 @@ function sortListings(listings: Listing[], state: OverviewState): Listing[] {
         cmp = a.preis - b.preis;
         break;
       case 'versand':
-        cmp = parsePortoPrice(a.porto ?? '') - parsePortoPrice(b.porto ?? '');
+        cmp = (a.porto_price ?? 0) - (b.porto_price ?? 0);
         break;
       case 'eingestellt':
         cmp = (a.eingestellt_am ?? '').localeCompare(b.eingestellt_am ?? '');
@@ -315,7 +315,7 @@ function renderTable(
 
     row.createEl('td', { text: listing.artikel });
     row.createEl('td', { text: `${formatCurrency(listing.preis)} ${listing.preisart ?? ''}`.trim() });
-    row.createEl('td', { text: listing.porto ?? '—' });
+    row.createEl('td', { text: formatPortoDisplay(listing.carrier, listing.porto_name, listing.porto_price) });
     row.createEl('td', { text: listing.eingestellt_am ? formatDateDE(listing.eingestellt_am) : '' });
 
     const statusCell = row.createEl('td');
@@ -428,7 +428,7 @@ function renderDetail(
   const listingSection = grid.createDiv({ cls: 'ka-detail-section' });
   addSectionHeader(listingSection, 'Inserat', () => callbacks.onEditListing(listing));
   addDetailRow(listingSection, 'Preis', `${formatCurrency(listing.preis)} ${listing.preisart ?? ''}`);
-  addDetailRow(listingSection, 'Versand', listing.porto ?? '—');
+  addDetailRow(listingSection, 'Versand', formatPortoDisplay(listing.carrier, listing.porto_name, listing.porto_price));
   if (listing.eingestellt_am) {
     addDetailRow(listingSection, 'Eingestellt am', formatDateDE(listing.eingestellt_am));
   }
@@ -454,7 +454,8 @@ function renderDetail(
     const shipSection = grid.createDiv({ cls: 'ka-detail-section' });
     addSectionHeader(shipSection, 'Versand', () => callbacks.onShip(listing));
     if (listing.anschrift) addDetailRow(shipSection, 'Anschrift', listing.anschrift);
-    if (listing.porto) addDetailRow(shipSection, 'Porto', listing.porto);
+    if (listing.carrier) addDetailRow(shipSection, 'Carrier', listing.carrier);
+    if (listing.porto_name) addDetailRow(shipSection, 'Porto', formatPortoDisplay(listing.carrier, listing.porto_name, listing.porto_price));
     if (listing.sendungsnummer) addDetailRow(shipSection, 'Sendungsnummer', listing.sendungsnummer);
     addDetailRow(shipSection, 'Label gedruckt', listing.label_erstellt ? '✓ Ja' : '✗ Nein');
     if (listing.verschickt_am) addDetailRow(shipSection, 'Verschickt am', formatDateDE(listing.verschickt_am));
@@ -466,7 +467,7 @@ function renderDetail(
     finSection.createEl('h4', { text: 'Finanzen' });
 
     const revenue = listing.verkauft_fuer;
-    const shippingCost = listing.porto ? parsePortoPrice(listing.porto) : 0;
+    const shippingCost = listing.porto_price ?? 0;
     const profit = revenue - shippingCost;
 
     addDetailRow(finSection, 'Einnahmen', formatCurrency(revenue));
