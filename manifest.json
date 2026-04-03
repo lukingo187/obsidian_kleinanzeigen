@@ -3,7 +3,7 @@
   "name": "Kleinanzeigen Tracker",
   "version": "0.1.0",
   "minAppVersion": "0.15.0",
-  "description": "Track eBay Kleinanzeigen listings from creation to shipment with integrated shipping management and profit tracking.",
-  "author": "lukasoberliess",
+  "description": "Track Kleinanzeigen listings from creation to shipment, with AI-powered descriptions, shipping management, and profit tracking.",
+  "author": "lukingo187",
   "isDesktopOnly": true
 }

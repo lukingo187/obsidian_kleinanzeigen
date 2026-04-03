@@ -11,8 +11,13 @@ node_modules
 # OS
 .DS_Store
 
-# Plugin data (contains API keys)
+# Plugin data (contains API keys and personal settings)
 data.json
+
+# Internal dev docs
+PLAN.md
+DESIGN.md
+docs/
 
 # Claude Code
 .claude/

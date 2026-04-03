@@ -1,14 +1,16 @@
-# Obsidian Kleinanzeigen
+# Kleinanzeigen Tracker
 
-An Obsidian plugin to track eBay Kleinanzeigen listings from creation to shipment completion, with integrated shipping management and profit tracking.
+An Obsidian plugin to track your Kleinanzeigen listings from creation to shipment, with integrated shipping management and profit tracking.
+
+> **Beta** — this plugin is in active development. Feedback welcome!
 
 ## Features
 
+- **AI Descriptions** — Generate listing descriptions with one click via Anthropic (Claude) or OpenAI (GPT)
 - **Quick Actions** — List, sell, ship, and complete items in 1–2 clicks
 - **Dashboard** — Table view with status filters, search, inline actions, and real-time profit calculations
 - **Shipping Management** — Address storage, label tracking, carrier support (DHL, Hermes, …)
 - **Statistics** — Monthly/yearly stats, revenue, profit/loss, average sale price/duration, shipping costs, API costs
-- **AI Descriptions** — Optional AI-powered description generation via Anthropic (Claude) or OpenAI (GPT)
 - **Templates** — Reusable article templates with pre-filled name, price, condition, shipping, and description
 - **Archive** — Archive completed items and review/delete them later
 - **Local Data** — All data stays in your vault as Markdown notes with YAML frontmatter
@@ -26,15 +28,25 @@ An Obsidian plugin to track eBay Kleinanzeigen listings from creation to shipmen
 
 ## Data Storage
 
-Each listing is a Markdown note with YAML frontmatter stored in a `kleinanzeigen/` folder:
+Each listing is a Markdown note with YAML frontmatter stored in a `kleinanzeigen/` folder inside your vault:
 
 ```
 kleinanzeigen/
 ├── iPhone 12.md
 ├── Gaming Chair.md
-├── MacBook Pro.md
 └── Desk Lamp.md
 ```
+
+## Beta Installation
+
+This plugin is not yet in the Obsidian community plugin list. Install it via **BRAT**:
+
+1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Obsidian's Community Plugins
+2. Open BRAT settings → **Add Beta Plugin**
+3. Enter: `lukingo187/obsidian_kleinanzeigen`
+4. Enable the plugin in Settings → Community Plugins
+
+BRAT will notify you when updates are available.
 
 ## Development
 
@@ -46,15 +58,16 @@ kleinanzeigen/
 ### Setup
 
 ```bash
+git clone https://github.com/lukingo187/obsidian_kleinanzeigen.git
+cd obsidian_kleinanzeigen
 npm install
 npm run dev
 ```
 
-### Symlink into vault (macOS)
+Symlink into your vault's plugin folder:
 
 ```bash
-ln -s "$(pwd)" \
-  ~/Library/Mobile\ Documents/com~apple~CloudDocs/obsidian_sync/Private/.obsidian/plugins/kleinanzeigen
+ln -s "$(pwd)" /path/to/your/vault/.obsidian/plugins/kleinanzeigen
 ```
 
 Then enable the plugin in Obsidian → Settings → Community Plugins.
