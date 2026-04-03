@@ -31,7 +31,8 @@ export class ShipModal extends Modal {
 
     contentEl.createEl('h2', { text: `Verschicken — ${this.listing.artikel}` });
 
-    new Setting(contentEl)
+    const addrContainer = contentEl.createDiv();
+    new Setting(addrContainer)
       .setName('Anschrift *')
       .addTextArea(ta => {
         ta.setPlaceholder('Name\nStraße Nr.\nPLZ Ort');
@@ -41,9 +42,15 @@ export class ShipModal extends Modal {
         ta.inputEl.addClass('ka-textarea');
       });
 
+    const isAbholung = () => this.portoState.carrier === 'Abholung';
+    const updateAddrVisibility = () => {
+      addrContainer.style.display = isAbholung() ? 'none' : '';
+    };
+
     renderCarrierPortoUI({
       container: contentEl,
       state: this.portoState,
+      onChange: () => updateAddrVisibility(),
       showTracking: true,
       trackingState: {
         sendungsnummer: this.sendungsnummer,
@@ -53,12 +60,14 @@ export class ShipModal extends Modal {
       },
     });
 
+    updateAddrVisibility();
+
     new Setting(contentEl)
       .addButton(btn => btn
         .setButtonText('Als verschickt markieren')
         .setCta()
         .onClick(() => {
-          if (!this.anschrift.trim()) return;
+          if (!isAbholung() && !this.anschrift.trim()) return;
 
           this.listing.status = 'Verschickt';
           this.listing.verschickt = true;

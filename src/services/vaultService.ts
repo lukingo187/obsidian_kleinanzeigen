@@ -164,6 +164,11 @@ export class VaultService {
     lines.push(`verschickt: ${listing.verschickt}`);
     if (listing.verschickt_am) lines.push(`verschickt_am: "${listing.verschickt_am}"`);
 
+    if (listing.beschreibung) {
+      const indented = listing.beschreibung.split('\n').map(l => `  ${l}`).join('\n');
+      lines.push(`beschreibung: |\n${indented}`);
+    }
+
     lines.push('---');
     lines.push('');
 

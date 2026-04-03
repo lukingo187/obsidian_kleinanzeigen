@@ -142,6 +142,7 @@ export interface PluginSettings {
   descriptionFooter: string;
   ebayEnabled: boolean;
   templates: ArticleTemplate[];
+  showCopyOverview: boolean;
 }
 
 // Pricing per 1M tokens in USD
@@ -181,4 +182,5 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   descriptionFooter: DEFAULT_DESCRIPTION_FOOTER,
   ebayEnabled: false,
   templates: [],
+  showCopyOverview: true,
 };

@@ -366,6 +366,20 @@ function renderGeneralSettings(wrap: HTMLElement, app: App, plugin: Kleinanzeige
 
     el.createDiv({ cls: 'ka-setting-hint', text: 'Ordner im Vault, in dem Artikel gespeichert werden.' });
   });
+
+  addSettingRow(section, 'Übersicht nach Einstellen', el => {
+    const toggleBtn = el.createEl('button', {
+      cls: `ka-toggle-switch${settings.showCopyOverview ? ' is-enabled' : ''}`,
+      attr: { role: 'switch', 'aria-checked': String(settings.showCopyOverview) },
+    });
+    toggleBtn.addEventListener('click', () => {
+      settings.showCopyOverview = !settings.showCopyOverview;
+      toggleBtn.classList.toggle('is-enabled', settings.showCopyOverview);
+      toggleBtn.setAttribute('aria-checked', String(settings.showCopyOverview));
+      plugin.saveSettings();
+    });
+    el.createDiv({ cls: 'ka-setting-hint', text: 'Nach dem Erstellen eines Artikels Kopier-Buttons für Titel und Beschreibung anzeigen.' });
+  });
 }
 
 function renderPlatformSettings(wrap: HTMLElement) {

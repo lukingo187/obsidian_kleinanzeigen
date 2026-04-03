@@ -226,6 +226,8 @@
   color: var(--text-muted);
   font-size: 0.95em;
   font-weight: 500;
+  width: fit-content;
+  flex-shrink: 0;
   transition: color 100ms ease, border-color 100ms ease;
 }
 
@@ -236,8 +238,7 @@
 .ka-dashboard .ka-tab-active,
 .ka-dashboard .ka-tab-active:hover {
   color: var(--text-normal);
-  border-bottom-color: var(--interactive-accent);
-  border-image: linear-gradient(90deg, var(--interactive-accent), var(--ka-accent-end)) 1;
+  border-bottom: 2px solid var(--interactive-accent);
 }
 
 /* Filter buttons */
@@ -729,6 +730,91 @@
   margin-top: 8px;
 }
 
+/* Description header with copy button */
+.ka-desc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ka-desc-header h4 {
+  margin: 0;
+}
+
+/* Inline copy button (detail view title row + description header) */
+.ka-copy-btn-inline {
+  cursor: pointer;
+  padding: 2px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.8em;
+  transition: color 100ms ease, border-color 100ms ease;
+  flex-shrink: 0;
+}
+
+.ka-copy-btn-inline:hover {
+  color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+}
+
+/* Post-creation modal copy rows */
+.ka-copy-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.ka-copy-label {
+  font-weight: 600;
+  min-width: 90px;
+  color: var(--text-muted);
+  font-size: 0.85em;
+  padding-top: 2px;
+}
+
+.ka-copy-preview {
+  flex: 1;
+  font-size: 0.9em;
+  white-space: pre-wrap;
+  word-break: break-word;
+  transition: color 150ms ease;
+}
+
+.ka-copy-preview-flash {
+  color: var(--color-green);
+}
+
+.ka-copy-btn {
+  cursor: pointer;
+  padding: 4px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.85em;
+  flex-shrink: 0;
+  transition: color 100ms ease, border-color 100ms ease;
+}
+
+.ka-copy-btn:hover {
+  color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+}
+
+.ka-close-btn {
+  margin-top: 16px;
+  padding: 6px 20px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 16px;
+  background: none;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
 /* Modal tweaks */
 .ka-modal .setting-item {
   border-top: none;
@@ -764,6 +850,7 @@
   border-radius: 16px;
   padding: 8px 20px;
   font-weight: 600;
+  color: var(--text-on-accent);
   background: linear-gradient(135deg, var(--interactive-accent), var(--ka-accent-end));
   box-shadow: 0 2px 8px var(--ka-accent-shadow);
   transition: transform 120ms ease, box-shadow 120ms ease;
@@ -1167,6 +1254,55 @@
   display: flex;
   gap: 8px;
   margin-top: 12px;
+}
+
+/* Mode toggle (Manuell / Mit KI / Aus Template) */
+.ka-mode-toggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.ka-mode-btn {
+  cursor: pointer;
+  padding: 6px 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 16px;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.9em;
+  font-weight: 500;
+  transition: background 100ms ease, color 100ms ease, border-color 100ms ease;
+}
+
+.ka-mode-btn:hover {
+  color: var(--text-normal);
+  border-color: var(--interactive-accent);
+}
+
+.ka-mode-btn-active {
+  background: linear-gradient(135deg, var(--interactive-accent), var(--ka-accent-end));
+  color: var(--text-on-accent);
+  border-color: transparent;
+}
+
+/* Divider shown after AI fills fields */
+.ka-ai-filled-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 8px;
+  color: var(--color-green);
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+.ka-ai-filled-divider::before,
+.ka-ai-filled-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--background-modifier-border);
 }
 
 /* Template section in modal */

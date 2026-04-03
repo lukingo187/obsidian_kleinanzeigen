@@ -6,7 +6,7 @@ import { ExportService } from '../services/exportService';
 import { formatCurrency, formatDateDE, formatPortoDisplay } from '../utils/formatting';
 import { ConfirmModal } from '../modals/confirmModal';
 import type { FilterStatus, OverviewState, DashboardCallbacks, DashboardActions, DropdownState } from './dashboard-types';
-import { renderStatusBadge, addSectionHeader, addDetailRow } from './dashboard-helpers';
+import { renderStatusBadge, addSectionHeader, addDetailRow, createCopyButton } from './dashboard-helpers';
 
 function getFilteredListings(listings: Listing[], state: OverviewState): Listing[] {
   let filtered: Listing[];
@@ -421,6 +421,7 @@ function renderDetail(
   titleRow.createEl('h3', { text: listing.artikel });
   const badge = titleRow.createSpan({ cls: `ka-badge ka-status-${listing.status.toLowerCase()}` });
   renderStatusBadge(badge, listing.status);
+  createCopyButton(titleRow, 'Titel kopieren', listing.artikel);
 
   const grid = detail.createDiv({ cls: 'ka-detail-grid' });
 
@@ -478,7 +479,9 @@ function renderDetail(
   // Beschreibung
   if (listing.beschreibung) {
     const descSection = detail.createDiv({ cls: 'ka-detail-section' });
-    descSection.createEl('h4', { text: 'Beschreibung' });
+    const descHeader = descSection.createDiv({ cls: 'ka-desc-header' });
+    descHeader.createEl('h4', { text: 'Beschreibung' });
+    createCopyButton(descHeader, 'Kopieren', listing.beschreibung!);
     descSection.createDiv({ cls: 'ka-desc-box', text: listing.beschreibung });
   }
 

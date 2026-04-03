@@ -41,3 +41,14 @@ export function addDetailRow(container: HTMLElement, label: string, value: strin
   row.createSpan({ cls: 'ka-detail-label', text: label });
   row.createSpan({ cls: 'ka-detail-value', text: value });
 }
+
+export function createCopyButton(container: HTMLElement, text: string, value: string, cls = 'ka-copy-btn-inline'): HTMLButtonElement {
+  const btn = container.createEl('button', { text, cls });
+  btn.addEventListener('click', async () => {
+    await navigator.clipboard.writeText(value);
+    const original = btn.textContent!;
+    btn.textContent = '✓ Kopiert!';
+    setTimeout(() => { btn.textContent = original; }, 2000);
+  });
+  return btn;
+}

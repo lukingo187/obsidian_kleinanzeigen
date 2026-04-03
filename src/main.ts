@@ -2,6 +2,7 @@ import { Notice, Plugin, WorkspaceLeaf } from 'obsidian';
 import { VaultService } from './services/vaultService';
 import { DashboardView, DASHBOARD_VIEW_TYPE } from './views/dashboard';
 import { NewItemModal } from './modals/newItemModal';
+import { PostCreationModal } from './modals/postCreationModal';
 import { EditListingModal } from './modals/editListingModal';
 import { SoldModal } from './modals/soldModal';
 import { ShipModal } from './modals/shipModal';
@@ -71,6 +72,9 @@ export default class KleinanzeigenPlugin extends Plugin {
       try {
         await this.vaultService.createListing(listing);
         this.refreshDashboard();
+        if (this.settings.showCopyOverview) {
+          new PostCreationModal(this.app, listing).open();
+        }
       } catch (e) {
         new Notice(`Fehler beim Erstellen: ${e instanceof Error ? e.message : String(e)}`);
       }
