@@ -1,6 +1,6 @@
-import { requestUrl } from 'obsidian';
-import { AIProvider, PluginSettings, ZUSTAND_OPTIONS, CARRIERS, CARRIER_OPTIONS, MODEL_PRICING } from '../models/listing';
+import { AIProvider, PluginSettings, ZUSTAND_OPTIONS, CARRIERS, CARRIER_OPTIONS, MODEL_PRICING, type DescriptionStyle } from '../models/listing';
 import { formatCurrency } from '../utils/formatting';
+import { getAdapter } from './providers/index';
 
 export interface ParsedListing {
   artikel: string;
@@ -9,12 +9,6 @@ export interface ParsedListing {
   porto_name?: string;
   porto_price?: number;
   beschreibung: string;
-}
-
-interface APIResponse {
-  text: string;
-  inputTokens: number;
-  outputTokens: number;
 }
 
 export class AIService {
@@ -36,7 +30,8 @@ export class AIService {
     }
 
     const prompt = this.buildParsePrompt(userText);
-    const resp = await this.callProvider(provider, config.apiKey, config.model, prompt);
+    const adapter = getAdapter(provider);
+    const resp = await adapter.generate(config.apiKey, config.model, prompt);
 
     if (this.onUsage) {
       this.onUsage(provider, config.model, resp.inputTokens, resp.outputTokens);
@@ -47,7 +42,8 @@ export class AIService {
 
   async testApiKey(provider: AIProvider, apiKey: string, model: string): Promise<{ ok: boolean; error?: string }> {
     try {
-      await this.callProvider(provider, apiKey, model, 'Antworte nur mit "OK".');
+      const adapter = getAdapter(provider);
+      await adapter.generate(apiKey, model, 'Antworte nur mit "OK".');
       return { ok: true };
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unbekannter Fehler';
@@ -61,6 +57,8 @@ export class AIService {
     const footerInstruction = footer
       ? `Am Ende der Beschreibung IMMER diesen Text anfügen:\n"${footer}"`
       : 'Kein Standardtext am Ende.';
+
+    const styleInstruction = this.getStyleInstruction();
 
     return `Du bist ein Assistent für eBay Kleinanzeigen Verkäufer. Der Nutzer beschreibt einen Artikel, den er verkaufen möchte. Extrahiere die Informationen und erstelle einen strukturierten Eintrag.
 
@@ -81,10 +79,25 @@ Antworte NUR mit einem JSON-Objekt (kein Markdown, kein Code-Block), mit diesen 
   "carrier": "Versanddienstleister (DHL/Deutsche Post, Hermes, Abholung, Sonstiges) falls erwähnt, sonst null",
   "porto_name": "Name der Porto-Option (z.B. Großbrief, Päckchen S) falls erwähnt, sonst null",
   "porto_price": "Preis als Zahl (z.B. 1.80) falls erwähnt, sonst null",
-  "beschreibung": "Verkaufsbeschreibung für Kleinanzeigen (3-5 Sätze, freundlich, professionell, Zustand erwähnen, kein Preis, keine Emojis)"
+  "beschreibung": "Verkaufsbeschreibung für Kleinanzeigen (${styleInstruction}, freundlich, professionell, Zustand erwähnen, kein Preis, keine Emojis)"
 }
 
 ${footerInstruction}`;
+  }
+
+  private getStyleInstruction(): string {
+    const styleMap: Record<Exclude<DescriptionStyle, 'custom'>, string> = {
+      fliesstext: '3-5 Sätze als Fließtext',
+      stichpunkte: 'als Stichpunkte/Aufzählung',
+      kurz: 'sehr kurz, 1-2 Sätze',
+      ausfuehrlich: 'ausführlich, 5-8 Sätze',
+    };
+
+    const style = this.settings.descriptionStyle;
+    if (style === 'custom') {
+      return this.settings.customStylePrompt.trim() || styleMap['fliesstext'];
+    }
+    return styleMap[style];
   }
 
   private extractJSON(raw: string): ParsedListing {
@@ -99,80 +112,14 @@ ${footerInstruction}`;
       return {
         artikel: parsed.artikel ?? '',
         zustand: parsed.zustand ?? 'Gut',
-        carrier: parsed.carrier ?? undefined,
-        porto_name: parsed.porto_name ?? undefined,
+        carrier: parsed.carrier,
+        porto_name: parsed.porto_name,
         porto_price: parsed.porto_price != null ? Number(parsed.porto_price) : undefined,
         beschreibung: parsed.beschreibung ?? '',
       };
     } catch {
       throw new Error('KI-Antwort konnte nicht verarbeitet werden. Bitte erneut versuchen.');
     }
-  }
-
-  private async callProvider(provider: AIProvider, apiKey: string, model: string, prompt: string): Promise<APIResponse> {
-    switch (provider) {
-      case 'anthropic':
-        return this.callAnthropic(apiKey, model, prompt);
-      case 'openai':
-        return this.callOpenAI(apiKey, model, prompt);
-    }
-  }
-
-  private async callAnthropic(apiKey: string, model: string, prompt: string): Promise<APIResponse> {
-    const response = await requestUrl({
-      url: 'https://api.anthropic.com/v1/messages',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 500,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-      throw: false,
-    });
-
-    if (response.status !== 200) {
-      const errMsg = response.json?.error?.message ?? `Status ${response.status}`;
-      throw new Error(`Anthropic API: ${errMsg}`);
-    }
-
-    return {
-      text: response.json.content[0].text,
-      inputTokens: response.json.usage?.input_tokens ?? 0,
-      outputTokens: response.json.usage?.output_tokens ?? 0,
-    };
-  }
-
-  private async callOpenAI(apiKey: string, model: string, prompt: string): Promise<APIResponse> {
-    const response = await requestUrl({
-      url: 'https://api.openai.com/v1/chat/completions',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 500,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-      throw: false,
-    });
-
-    if (response.status !== 200) {
-      const errMsg = response.json?.error?.message ?? `Status ${response.status}`;
-      throw new Error(`OpenAI API: ${errMsg}`);
-    }
-
-    return {
-      text: response.json.choices[0].message.content,
-      inputTokens: response.json.usage?.prompt_tokens ?? 0,
-      outputTokens: response.json.usage?.completion_tokens ?? 0,
-    };
   }
 
   static calculateCost(model: string, inputTokens: number, outputTokens: number): number {

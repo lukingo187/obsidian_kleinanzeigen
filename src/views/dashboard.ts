@@ -2,9 +2,8 @@ import { ItemView, Notice, WorkspaceLeaf, setIcon } from 'obsidian';
 import { Listing, Status } from '../models/listing';
 import { VaultService } from '../services/vaultService';
 import type KleinanzeigenPlugin from '../main';
-import type { Tab, DashboardCallbacks, OverviewState, StatsState, SettingsState, DropdownState, DashboardActions } from './dashboard-types';
+import type { Tab, DashboardCallbacks, OverviewState, StatsState, DropdownState, DashboardActions } from './dashboard-types';
 import { renderStatsView } from './dashboard-stats';
-import { renderSettingsView } from './dashboard-settings';
 import { renderOverview } from './dashboard-overview';
 
 export { type DashboardCallbacks } from './dashboard-types';
@@ -27,7 +26,6 @@ export class DashboardView extends ItemView {
     selectedPaths: new Set(),
   };
   private statsState: StatsState = { statsPeriod: 'monthly' };
-  private settingsState: SettingsState = { editingTemplate: null };
   private dropdownState: DropdownState = { closeHandler: null };
 
   private actions: DashboardActions = {
@@ -135,7 +133,6 @@ export class DashboardView extends ItemView {
     switch (this.activeTab) {
       case 'overview': renderOverview(root, this.app, this.listings, this.overviewState, this.callbacks, this.actions, this.vaultService, this.dropdownState); break;
       case 'stats': renderStatsView(root, this.listings, this.statsState, this.plugin.settings); break;
-      case 'settings': renderSettingsView(root, this.app, this.plugin, this.settingsState, this.actions); break;
     }
   }
 
@@ -158,7 +155,6 @@ export class DashboardView extends ItemView {
     const tabOptions: [Tab, string][] = [
       ['overview', 'Übersicht'],
       ['stats', 'Statistiken'],
-      ['settings', 'Einstellungen'],
     ];
 
     for (const [tab, label] of tabOptions) {

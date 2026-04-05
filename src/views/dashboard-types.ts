@@ -1,7 +1,7 @@
-import type { Listing, Status, ArticleTemplate } from '../models/listing';
+import type { Listing, Status } from '../models/listing';
 
 export type FilterStatus = 'Alle' | 'Archiv' | Status;
-export type Tab = 'overview' | 'stats' | 'settings';
+export type Tab = 'overview' | 'stats';
 export type StatsPeriod = 'monthly' | 'yearly';
 export type SortColumn = 'artikel' | 'preis' | 'versand' | 'eingestellt' | 'status';
 export type SortDirection = 'asc' | 'desc';
@@ -25,10 +25,6 @@ export interface OverviewState {
 
 export interface StatsState {
   statsPeriod: StatsPeriod;
-}
-
-export interface SettingsState {
-  editingTemplate: ArticleTemplate | null;
 }
 
 export interface DropdownState {

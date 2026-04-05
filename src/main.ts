@@ -9,6 +9,7 @@ import { ShipModal } from './modals/shipModal';
 import { RelistModal } from './modals/relistModal';
 import { Listing, PluginSettings, DEFAULT_SETTINGS, AIProvider } from './models/listing';
 import { AIService } from './services/aiService';
+import { SettingsTab } from './views/settingsTab';
 
 export default class KleinanzeigenPlugin extends Plugin {
   private vaultService!: VaultService;
@@ -16,6 +17,7 @@ export default class KleinanzeigenPlugin extends Plugin {
 
   async onload() {
     await this.loadSettings();
+    this.addSettingTab(new SettingsTab(this.app, this));
     this.vaultService = new VaultService(this.app, () => this.settings.baseFolder);
 
     this.registerView(

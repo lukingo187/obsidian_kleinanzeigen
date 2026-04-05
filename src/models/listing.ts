@@ -103,7 +103,17 @@ export interface ArticleTemplate {
 
 // ── Settings ──
 
-export type AIProvider = 'anthropic' | 'openai';
+export type AIProvider = 'anthropic' | 'openai' | 'google';
+
+export type DescriptionStyle = 'fliesstext' | 'stichpunkte' | 'kurz' | 'ausfuehrlich' | 'custom';
+
+export const DESCRIPTION_STYLES: { id: DescriptionStyle; label: string }[] = [
+  { id: 'fliesstext', label: 'Fließtext (Standard)' },
+  { id: 'stichpunkte', label: 'Stichpunkte' },
+  { id: 'kurz', label: 'Kurz & knapp' },
+  { id: 'ausfuehrlich', label: 'Ausführlich' },
+  { id: 'custom', label: 'Benutzerdefiniert' },
+];
 
 export interface AIProviderConfig {
   apiKey: string;
@@ -111,6 +121,10 @@ export interface AIProviderConfig {
 }
 
 export const DEFAULT_MODELS: Record<AIProvider, { id: string; label: string }[]> = {
+  google: [
+    { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash (schnell & kostenlos)' },
+    { id: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
+  ],
   anthropic: [
     { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (schnell & günstig)' },
     { id: 'claude-sonnet-4-5-20250514', label: 'Claude Sonnet 4.5' },
@@ -139,6 +153,8 @@ export interface PluginSettings {
   aiProvider: AIProvider;
   aiProviders: Record<AIProvider, AIProviderConfig>;
   aiUsage: Record<AIProvider, AIUsageRecord>;
+  descriptionStyle: DescriptionStyle;
+  customStylePrompt: string;
   descriptionFooter: string;
   ebayEnabled: boolean;
   templates: ArticleTemplate[];
@@ -157,11 +173,13 @@ export const MODEL_PRICING: Record<string, { input: number; output: number }> = 
   'gpt-4.1-mini': { input: 0.40, output: 1.60 },
   'gpt-4.1-nano': { input: 0.10, output: 0.40 },
   'o3-mini': { input: 1.10, output: 4.40 },
+  'gemini-2.0-flash': { input: 0, output: 0 },
+  'gemini-2.0-flash-lite': { input: 0, output: 0 },
 };
 
 export const DEFAULT_DESCRIPTION_FOOTER = 'Dies ist ein Privatverkauf. Keine Garantie, keine Rücknahme.';
 
-const DEFAULT_USAGE: AIUsageRecord = {
+export const DEFAULT_USAGE: AIUsageRecord = {
   totalInputTokens: 0,
   totalOutputTokens: 0,
   totalCostUSD: 0,
@@ -170,15 +188,19 @@ const DEFAULT_USAGE: AIUsageRecord = {
 
 export const DEFAULT_SETTINGS: PluginSettings = {
   baseFolder: 'kleinanzeigen',
-  aiProvider: 'anthropic',
+  aiProvider: 'google',
   aiProviders: {
+    google: { apiKey: '', model: 'gemini-2.0-flash' },
     anthropic: { apiKey: '', model: 'claude-haiku-4-5-20251001' },
     openai: { apiKey: '', model: 'gpt-4o-mini' },
   },
   aiUsage: {
+    google: { ...DEFAULT_USAGE },
     anthropic: { ...DEFAULT_USAGE },
     openai: { ...DEFAULT_USAGE },
   },
+  descriptionStyle: 'fliesstext',
+  customStylePrompt: '',
   descriptionFooter: DEFAULT_DESCRIPTION_FOOTER,
   ebayEnabled: false,
   templates: [],
