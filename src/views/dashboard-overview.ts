@@ -64,8 +64,6 @@ function renderSummaryStats(root: HTMLElement, listings: Listing[]) {
     ['Verkauft', stats.soldCount.toString(), 'banknote', 'verkauft'],
     ['Verschickt', stats.shippedCount.toString(), 'truck', 'verschickt'],
     ['Abgeschlossen', stats.completedCount.toString(), 'circle-check', 'abgeschlossen'],
-    ['Umsatz', formatCurrency(stats.totalRevenue), 'trending-up', 'umsatz'],
-    ['Gewinn', formatCurrency(stats.totalProfit), 'wallet', 'gewinn'],
   ];
 
   for (const [label, value, icon, accent] of items) {

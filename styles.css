@@ -140,37 +140,14 @@
 }
 
 /* Stats tab card accents */
-.ka-stats-listed { border-top: 3px solid var(--interactive-accent); }
-.ka-stats-listed .ka-stat-icon { color: var(--interactive-accent); }
-.ka-stats-listed .ka-stat-value { color: var(--interactive-accent); }
-
-.ka-stats-sold { border-top: 3px solid var(--ka-color-verkauft); }
-.ka-stats-sold .ka-stat-icon { color: var(--ka-color-verkauft); }
-.ka-stats-sold .ka-stat-value { color: var(--ka-color-verkauft); }
-
-.ka-stats-revenue { border-top: 3px solid var(--ka-accent-end); }
-.ka-stats-revenue .ka-stat-icon { color: var(--ka-accent-end); }
-.ka-stats-revenue .ka-stat-value { color: var(--ka-accent-end); }
-
-.ka-stats-profit { border-top: 3px solid var(--ka-color-abgeschlossen); }
-.ka-stats-profit .ka-stat-icon { color: var(--ka-color-abgeschlossen); }
-.ka-stats-profit .ka-stat-value { color: var(--ka-color-abgeschlossen); }
-
-.ka-stats-duration { border-top: 3px solid var(--ka-color-duration); }
-.ka-stats-duration .ka-stat-icon { color: var(--ka-color-duration); }
-.ka-stats-duration .ka-stat-value { color: var(--ka-color-duration); }
-
-.ka-stats-avgprice { border-top: 3px solid var(--ka-color-avgprice); }
-.ka-stats-avgprice .ka-stat-icon { color: var(--ka-color-avgprice); }
-.ka-stats-avgprice .ka-stat-value { color: var(--ka-color-avgprice); }
-
-.ka-stats-shipping { border-top: 3px solid var(--ka-color-verschickt); }
-.ka-stats-shipping .ka-stat-icon { color: var(--ka-color-verschickt); }
-.ka-stats-shipping .ka-stat-value { color: var(--ka-color-verschickt); }
-
-.ka-stats-ai { border-top: 3px solid var(--ka-color-abgelaufen); }
-.ka-stats-ai .ka-stat-icon { color: var(--ka-color-abgelaufen); }
-.ka-stats-ai .ka-stat-value { color: var(--ka-color-abgelaufen); }
+.ka-stats-listed .ka-stat-icon, .ka-stats-listed .ka-stat-value { color: var(--interactive-accent); }
+.ka-stats-sold .ka-stat-icon, .ka-stats-sold .ka-stat-value { color: var(--ka-color-verkauft); }
+.ka-stats-revenue .ka-stat-icon, .ka-stats-revenue .ka-stat-value { color: var(--ka-accent-end); }
+.ka-stats-profit .ka-stat-icon, .ka-stats-profit .ka-stat-value { color: var(--ka-color-abgeschlossen); }
+.ka-stats-duration .ka-stat-icon, .ka-stats-duration .ka-stat-value { color: var(--ka-color-duration); }
+.ka-stats-avgprice .ka-stat-icon, .ka-stats-avgprice .ka-stat-value { color: var(--ka-color-avgprice); }
+.ka-stats-shipping .ka-stat-icon, .ka-stats-shipping .ka-stat-value { color: var(--ka-color-verschickt); }
+.ka-stats-ai .ka-stat-icon, .ka-stats-ai .ka-stat-value { color: var(--ka-color-abgelaufen); }
 
 .ka-stat-card {
   background: var(--background-secondary);
@@ -186,20 +163,11 @@
   border-color: var(--background-modifier-border);
 }
 
-/* Status accent colors — top border + icon color on stat cards */
-.ka-accent-aktiv { border-top: 3px solid var(--ka-color-aktiv); }
-.ka-accent-verkauft { border-top: 3px solid var(--ka-color-verkauft); }
-.ka-accent-verschickt { border-top: 3px solid var(--ka-color-verschickt); }
-.ka-accent-abgeschlossen { border-top: 3px solid var(--ka-color-abgeschlossen); }
-.ka-accent-umsatz { border-top: 3px solid var(--interactive-accent); }
-.ka-accent-gewinn { border-top: 3px solid var(--ka-color-gewinn); }
-
+/* Status accent colors — icon + value color on stat cards */
 .ka-accent-aktiv .ka-stat-icon, .ka-accent-aktiv .ka-stat-value { color: var(--ka-color-aktiv); }
 .ka-accent-verkauft .ka-stat-icon, .ka-accent-verkauft .ka-stat-value { color: var(--ka-color-verkauft); }
 .ka-accent-verschickt .ka-stat-icon, .ka-accent-verschickt .ka-stat-value { color: var(--ka-color-verschickt); }
 .ka-accent-abgeschlossen .ka-stat-icon, .ka-accent-abgeschlossen .ka-stat-value { color: var(--ka-color-abgeschlossen); }
-.ka-accent-umsatz .ka-stat-icon, .ka-accent-umsatz .ka-stat-value { color: var(--interactive-accent); }
-.ka-accent-gewinn .ka-stat-icon, .ka-accent-gewinn .ka-stat-value { color: var(--ka-color-gewinn); }
 
 .ka-stat-value {
   font-size: 1.4em;
