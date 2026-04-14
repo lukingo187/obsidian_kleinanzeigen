@@ -59,17 +59,19 @@ function renderSummaryStats(root: HTMLElement, listings: Listing[]) {
   const stats = calculateStats(listings);
   const statsEl = root.createDiv({ cls: 'ka-stats' });
 
-  const items: [string, string, string][] = [
-    ['Aktiv', stats.activeCount.toString(), 'aktiv'],
-    ['Verkauft', stats.soldCount.toString(), 'verkauft'],
-    ['Verschickt', stats.shippedCount.toString(), 'verschickt'],
-    ['Abgeschlossen', stats.completedCount.toString(), 'abgeschlossen'],
-    ['Umsatz', formatCurrency(stats.totalRevenue), 'umsatz'],
-    ['Gewinn', formatCurrency(stats.totalProfit), 'gewinn'],
+  const items: [string, string, string, string][] = [
+    ['Aktiv', stats.activeCount.toString(), 'circle-dot', 'aktiv'],
+    ['Verkauft', stats.soldCount.toString(), 'banknote', 'verkauft'],
+    ['Verschickt', stats.shippedCount.toString(), 'truck', 'verschickt'],
+    ['Abgeschlossen', stats.completedCount.toString(), 'circle-check', 'abgeschlossen'],
+    ['Umsatz', formatCurrency(stats.totalRevenue), 'trending-up', 'umsatz'],
+    ['Gewinn', formatCurrency(stats.totalProfit), 'wallet', 'gewinn'],
   ];
 
-  for (const [label, value, accent] of items) {
+  for (const [label, value, icon, accent] of items) {
     const card = statsEl.createDiv({ cls: `ka-stat-card ka-accent-${accent}` });
+    const iconEl = card.createDiv({ cls: 'ka-stat-icon' });
+    setIcon(iconEl, icon);
     card.createDiv({ cls: 'ka-stat-value', text: value });
     card.createDiv({ cls: 'ka-stat-label', text: label });
   }

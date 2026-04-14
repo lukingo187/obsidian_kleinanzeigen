@@ -11,6 +11,8 @@
   --ka-color-archiviert: #888;
   --ka-color-error: #f44336;
   --ka-color-gewinn: #66bb6a;
+  --ka-color-duration: #ab47bc;
+  --ka-color-avgprice: #29b6f6;
 }
 
 /* Also scope variables for modals (outside .ka-dashboard) */
@@ -101,6 +103,9 @@
 .ka-stats .ka-stat-card {
   flex: 1 1 0;
   min-width: 100px;
+  position: relative;
+  overflow: hidden;
+  animation: ka-card-enter 250ms ease-out both;
 }
 
 /* Stats grid (stats tab — fixed 4-column layout) */
@@ -151,13 +156,13 @@
 .ka-stats-profit .ka-stat-icon { color: var(--ka-color-abgeschlossen); }
 .ka-stats-profit .ka-stat-value { color: var(--ka-color-abgeschlossen); }
 
-.ka-stats-duration { border-top: 3px solid #ab47bc; }
-.ka-stats-duration .ka-stat-icon { color: #ab47bc; }
-.ka-stats-duration .ka-stat-value { color: #ab47bc; }
+.ka-stats-duration { border-top: 3px solid var(--ka-color-duration); }
+.ka-stats-duration .ka-stat-icon { color: var(--ka-color-duration); }
+.ka-stats-duration .ka-stat-value { color: var(--ka-color-duration); }
 
-.ka-stats-avgprice { border-top: 3px solid #29b6f6; }
-.ka-stats-avgprice .ka-stat-icon { color: #29b6f6; }
-.ka-stats-avgprice .ka-stat-value { color: #29b6f6; }
+.ka-stats-avgprice { border-top: 3px solid var(--ka-color-avgprice); }
+.ka-stats-avgprice .ka-stat-icon { color: var(--ka-color-avgprice); }
+.ka-stats-avgprice .ka-stat-value { color: var(--ka-color-avgprice); }
 
 .ka-stats-shipping { border-top: 3px solid var(--ka-color-verschickt); }
 .ka-stats-shipping .ka-stat-icon { color: var(--ka-color-verschickt); }
@@ -181,20 +186,20 @@
   border-color: var(--background-modifier-border);
 }
 
-/* Status accent colors — subtle left border on stat cards */
-.ka-accent-aktiv { border-left: 3px solid var(--ka-color-aktiv); }
-.ka-accent-verkauft { border-left: 3px solid var(--ka-color-verkauft); }
-.ka-accent-verschickt { border-left: 3px solid var(--ka-color-verschickt); }
-.ka-accent-abgeschlossen { border-left: 3px solid var(--ka-color-abgeschlossen); }
-.ka-accent-umsatz { border-left: 3px solid var(--interactive-accent); }
-.ka-accent-gewinn { border-left: 3px solid var(--ka-color-gewinn); }
+/* Status accent colors — top border + icon color on stat cards */
+.ka-accent-aktiv { border-top: 3px solid var(--ka-color-aktiv); }
+.ka-accent-verkauft { border-top: 3px solid var(--ka-color-verkauft); }
+.ka-accent-verschickt { border-top: 3px solid var(--ka-color-verschickt); }
+.ka-accent-abgeschlossen { border-top: 3px solid var(--ka-color-abgeschlossen); }
+.ka-accent-umsatz { border-top: 3px solid var(--interactive-accent); }
+.ka-accent-gewinn { border-top: 3px solid var(--ka-color-gewinn); }
 
-.ka-accent-aktiv .ka-stat-value { color: var(--ka-color-aktiv); }
-.ka-accent-verkauft .ka-stat-value { color: var(--ka-color-verkauft); }
-.ka-accent-verschickt .ka-stat-value { color: var(--ka-color-verschickt); }
-.ka-accent-abgeschlossen .ka-stat-value { color: var(--ka-color-abgeschlossen); }
-.ka-accent-umsatz .ka-stat-value { color: var(--interactive-accent); }
-.ka-accent-gewinn .ka-stat-value { color: var(--ka-color-gewinn); }
+.ka-accent-aktiv .ka-stat-icon, .ka-accent-aktiv .ka-stat-value { color: var(--ka-color-aktiv); }
+.ka-accent-verkauft .ka-stat-icon, .ka-accent-verkauft .ka-stat-value { color: var(--ka-color-verkauft); }
+.ka-accent-verschickt .ka-stat-icon, .ka-accent-verschickt .ka-stat-value { color: var(--ka-color-verschickt); }
+.ka-accent-abgeschlossen .ka-stat-icon, .ka-accent-abgeschlossen .ka-stat-value { color: var(--ka-color-abgeschlossen); }
+.ka-accent-umsatz .ka-stat-icon, .ka-accent-umsatz .ka-stat-value { color: var(--interactive-accent); }
+.ka-accent-gewinn .ka-stat-icon, .ka-accent-gewinn .ka-stat-value { color: var(--ka-color-gewinn); }
 
 .ka-stat-value {
   font-size: 1.4em;
