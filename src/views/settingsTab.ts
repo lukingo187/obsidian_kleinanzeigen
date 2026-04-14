@@ -130,9 +130,21 @@ export class SettingsTab extends PluginSettingTab {
         });
       });
 
+    // API Key help link
+    const apiKeyLinks: Record<AIProvider, { url: string; text: string }> = {
+      google: { url: 'https://aistudio.google.com/app/apikey', text: 'Kostenlosen API-Key bei Google AI Studio erstellen' },
+      anthropic: { url: 'https://console.anthropic.com/settings/keys', text: 'API-Key in der Anthropic Console erstellen' },
+      openai: { url: 'https://platform.openai.com/api-keys', text: 'API-Key bei OpenAI erstellen' },
+    };
+    const link = apiKeyLinks[settings.aiProvider];
+
     // API Key with visibility toggle
     const apiKeySetting = new Setting(containerEl)
-      .setName('API-Key');
+      .setName('API-Key')
+      .setDesc(createFragment(f => {
+        const a = f.createEl('a', { text: link.text, href: link.url });
+        a.setAttr('target', '_blank');
+      }));
 
     const keyInput = apiKeySetting.controlEl.createEl('input', {
       type: 'password',
