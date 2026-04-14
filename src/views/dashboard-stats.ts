@@ -41,7 +41,8 @@ function renderPeriodTable(container: HTMLElement, listings: Listing[], state: S
 export function renderStatsView(root: HTMLElement, listings: Listing[], state: StatsState, settings: PluginSettings) {
   const totalStats = calculateStats(listings);
   const extStats = calculateExtendedStats(listings);
-  const aiCost = settings.aiUsage.anthropic.totalCostUSD
+  const aiCost = settings.aiUsage.google.totalCostUSD
+    + settings.aiUsage.anthropic.totalCostUSD
     + settings.aiUsage.openai.totalCostUSD;
 
   const statsGrid = root.createDiv({ cls: 'ka-stats-grid' });

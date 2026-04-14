@@ -1,4 +1,4 @@
-import { App, Modal, Setting } from 'obsidian';
+import { App, Modal, Notice, Setting } from 'obsidian';
 import { Listing } from '../models/listing';
 import { todayString } from '../utils/formatting';
 
@@ -58,7 +58,7 @@ export class SoldModal extends Modal {
         .setButtonText(btnText)
         .setCta()
         .onClick(() => {
-          if (this.verkauftFuer <= 0) return;
+          if (this.verkauftFuer <= 0) { new Notice('Bitte einen gültigen Verkaufspreis eingeben.'); return; }
 
           const today = todayString();
           if (!this.isEdit) {

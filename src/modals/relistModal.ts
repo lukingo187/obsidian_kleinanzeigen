@@ -1,4 +1,4 @@
-import { App, Modal, Setting } from 'obsidian';
+import { App, Modal, Notice, Setting } from 'obsidian';
 import { Listing } from '../models/listing';
 import { todayString } from '../utils/formatting';
 
@@ -41,7 +41,7 @@ export class RelistModal extends Modal {
         .setButtonText('Neu einstellen')
         .setCta()
         .onClick(() => {
-          if (this.preis <= 0) return;
+          if (this.preis <= 0) { new Notice('Bitte einen gültigen Preis eingeben.'); return; }
 
           this.listing.status = 'Aktiv';
           this.listing.preis = this.preis;

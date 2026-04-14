@@ -1,4 +1,4 @@
-import { App, Modal, Setting } from 'obsidian';
+import { App, Modal, Notice, Setting } from 'obsidian';
 import { Listing, ZUSTAND_OPTIONS, Zustand, Preisart, DEFAULT_CARRIER } from '../models/listing';
 import { PortoState, renderCarrierPortoUI } from '../utils/portoUI';
 
@@ -81,7 +81,7 @@ export class EditListingModal extends Modal {
         .setButtonText('Speichern')
         .setCta()
         .onClick(() => {
-          if (!this.artikel.trim()) return;
+          if (!this.artikel.trim()) { new Notice('Bitte einen Artikelnamen eingeben.'); return; }
 
           this.listing.artikel = this.artikel.trim();
           this.listing.zustand = this.zustand;

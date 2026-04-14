@@ -1,4 +1,4 @@
-import { App, Modal, Setting } from 'obsidian';
+import { App, Modal, Notice, Setting } from 'obsidian';
 import { Listing, DEFAULT_CARRIER } from '../models/listing';
 import { todayString } from '../utils/formatting';
 import { PortoState, renderCarrierPortoUI } from '../utils/portoUI';
@@ -67,7 +67,7 @@ export class ShipModal extends Modal {
         .setButtonText('Als verschickt markieren')
         .setCta()
         .onClick(() => {
-          if (!isAbholung() && !this.anschrift.trim()) return;
+          if (!isAbholung() && !this.anschrift.trim()) { new Notice('Bitte eine Anschrift eingeben.'); return; }
 
           this.listing.status = 'Verschickt';
           this.listing.verschickt = true;
