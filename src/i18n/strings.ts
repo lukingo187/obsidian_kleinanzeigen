@@ -10,10 +10,10 @@ export const de = {
   // ── Zustand display values ───────────────────────────────
   'zustand.new_with_tag': 'Neu mit Etikett',
   'zustand.new':          'Neu',
-  'zustand.very_good':    'Sehr Gut',
-  'zustand.good':         'Gut',
-  'zustand.acceptable':   'In Ordnung',
-  'zustand.defective':    'Defekt',
+  'zustand.like_new':     'Sehr Gut',
+  'zustand.ok':           'Gut',
+  'zustand.alright':      'In Ordnung',
+  'zustand.defect':       'Defekt',
 
   // ── Preisart display values ──────────────────────────────
   'preisart.negotiable': 'VB',
@@ -283,10 +283,10 @@ export const en: Record<keyof typeof de, string> = {
   // ── Zustand ──────────────────────────────────────────────
   'zustand.new_with_tag': 'New with tag',
   'zustand.new':          'New',
-  'zustand.very_good':    'Very Good',
-  'zustand.good':         'Good',
-  'zustand.acceptable':   'Acceptable',
-  'zustand.defective':    'Defective',
+  'zustand.like_new':     'Like New',
+  'zustand.ok':           'Good',
+  'zustand.alright':      'Acceptable',
+  'zustand.defect':       'Defective',
 
   // ── Preisart ─────────────────────────────────────────────
   'preisart.negotiable': 'Negotiable',

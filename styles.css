@@ -875,9 +875,7 @@
   --ka-accent-end: #7c4dff;
   --ka-accent-shadow: rgba(124, 77, 255, 0.25);
   --ka-color-error: #f44336;
-  max-width: 780px;
-  margin: 0 auto;
-  padding: 8px 0;
+  padding: 8px 18px;
 }
 
 /* Section separator header: [icon] LABEL ──────── */

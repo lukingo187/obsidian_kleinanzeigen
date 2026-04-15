@@ -1,6 +1,6 @@
 export type Preisart = 'negotiable' | 'fixed';
 
-export type Zustand = 'new_with_tag' | 'new' | 'very_good' | 'good' | 'acceptable' | 'defective';
+export type Zustand = 'new_with_tag' | 'new' | 'like_new' | 'ok' | 'alright' | 'defect';
 
 export type Status = 'active' | 'sold' | 'shipped' | 'completed' | 'expired' | 'archived';
 
@@ -78,7 +78,7 @@ export interface Listing {
 }
 
 export const ZUSTAND_OPTIONS: Zustand[] = [
-  'new_with_tag', 'new', 'very_good', 'good', 'acceptable', 'defective',
+  'new_with_tag', 'new', 'like_new', 'ok', 'alright', 'defect',
 ];
 
 export const STATUS_OPTIONS: Status[] = [

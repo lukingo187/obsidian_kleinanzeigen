@@ -9,7 +9,7 @@ type Mode = 'manual' | 'ai' | 'template';
 
 export class NewItemModal extends Modal {
   private artikel = '';
-  private zustand: Zustand = 'good';
+  private zustand: Zustand = 'ok';
   private preis = 0;
   private preisart: Preisart = 'negotiable';
   private portoState: PortoState = { carrier: DEFAULT_CARRIER, portoName: undefined, portoPrice: undefined };
