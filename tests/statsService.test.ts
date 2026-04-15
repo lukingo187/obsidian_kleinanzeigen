@@ -12,11 +12,11 @@ describe('calculateStats', () => {
 
   it('counts statuses correctly', () => {
     const listings = [
-      makeListing({ status: 'Aktiv' }),
-      makeListing({ status: 'Aktiv' }),
-      makeListing({ status: 'Verkauft', verkauft: true, verkauft_fuer: 25 }),
-      makeListing({ status: 'Verschickt', verkauft: true, verkauft_fuer: 15 }),
-      makeListing({ status: 'Abgeschlossen', verkauft: true, verkauft_fuer: 30 }),
+      makeListing({ status: 'active' }),
+      makeListing({ status: 'active' }),
+      makeListing({ status: 'sold', verkauft: true, verkauft_fuer: 25 }),
+      makeListing({ status: 'shipped', verkauft: true, verkauft_fuer: 15 }),
+      makeListing({ status: 'completed', verkauft: true, verkauft_fuer: 30 }),
     ];
     const stats = calculateStats(listings);
     expect(stats.activeCount).toBe(2);
