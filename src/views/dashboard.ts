@@ -1,5 +1,6 @@
 import { ItemView, Notice, WorkspaceLeaf, setIcon } from 'obsidian';
 import { Listing, Status } from '../models/listing';
+import { t } from '../i18n';
 import { VaultService } from '../services/vaultService';
 import type KleinanzeigenPlugin from '../main';
 import type { Tab, DashboardCallbacks, OverviewState, StatsState, DropdownState, DashboardActions } from './dashboard-types';
@@ -18,7 +19,7 @@ export class DashboardView extends ItemView {
   private closed = false;
 
   private overviewState: OverviewState = {
-    filter: 'Alle',
+    filter: 'all',
     searchQuery: '',
     expandedListing: null,
     sortColumn: 'eingestellt',
@@ -49,7 +50,7 @@ export class DashboardView extends ItemView {
   }
 
   getViewType() { return DASHBOARD_VIEW_TYPE; }
-  getDisplayText() { return 'Kleinanzeigen'; }
+  getDisplayText() { return t('dashboard.title'); }
   getIcon() { return 'shopping-cart'; }
 
   private keyHandler = this.handleKeydown.bind(this);
@@ -138,14 +139,14 @@ export class DashboardView extends ItemView {
 
   private renderHeader(root: HTMLElement) {
     const header = root.createDiv({ cls: 'ka-header' });
-    header.createEl('h2', { text: 'Kleinanzeigen Tracker' });
+    header.createEl('h2', { text: t('dashboard.title') });
 
     const btns = header.createDiv({ cls: 'ka-header-btns' });
 
-    const newBtn = btns.createEl('button', { text: '+ Neuer Artikel', cls: 'ka-new-btn' });
+    const newBtn = btns.createEl('button', { text: t('dashboard.newItem'), cls: 'ka-new-btn' });
     newBtn.addEventListener('click', () => this.callbacks.onNewItem());
 
-    const refreshBtn = btns.createEl('button', { cls: 'ka-refresh-btn', attr: { 'aria-label': 'Aktualisieren' } });
+    const refreshBtn = btns.createEl('button', { cls: 'ka-refresh-btn', attr: { 'aria-label': t('dashboard.refresh') } });
     setIcon(refreshBtn, 'refresh-cw');
     refreshBtn.addEventListener('click', () => this.refresh());
   }
@@ -153,8 +154,8 @@ export class DashboardView extends ItemView {
   private renderTabs(root: HTMLElement) {
     const tabs = root.createDiv({ cls: 'ka-tabs' });
     const tabOptions: [Tab, string][] = [
-      ['overview', 'Übersicht'],
-      ['stats', 'Statistiken'],
+      ['overview', t('dashboard.tab.overview')],
+      ['stats', t('dashboard.tab.stats')],
     ];
 
     for (const [tab, label] of tabOptions) {
@@ -201,8 +202,8 @@ export class DashboardView extends ItemView {
   private async undoStatus(listing: Listing, targetStatus: Status) {
     const updated: Listing = { ...listing, status: targetStatus };
 
-    // Reset sale + payment fields when reverting from Verkauft
-    if (listing.status === 'Verkauft') {
+    // Reset sale + payment fields when reverting from sold
+    if (listing.status === 'sold') {
       updated.verkauft = false;
       updated.verkauft_am = undefined;
       updated.verkauft_fuer = undefined;
@@ -211,8 +212,8 @@ export class DashboardView extends ItemView {
       updated.bezahlart = undefined;
     }
 
-    // Reset shipping fields when reverting from Verschickt
-    if (listing.status === 'Verschickt') {
+    // Reset shipping fields when reverting from shipped
+    if (listing.status === 'shipped') {
       updated.verschickt = false;
       updated.verschickt_am = undefined;
       updated.anschrift = undefined;

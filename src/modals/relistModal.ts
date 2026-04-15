@@ -1,6 +1,7 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
 import { Listing } from '../models/listing';
 import { todayString } from '../utils/formatting';
+import { t } from '../i18n';
 
 export class RelistModal extends Modal {
   private listing: Listing;
@@ -18,19 +19,19 @@ export class RelistModal extends Modal {
     const { contentEl } = this;
     contentEl.addClass('ka-modal');
 
-    contentEl.createEl('h2', { text: `Neu einstellen — ${this.listing.artikel}` });
+    contentEl.createEl('h2', { text: `${t('modal.relist.title')} — ${this.listing.artikel}` });
 
     new Setting(contentEl)
-      .setName('Preis (€)')
-      .setDesc(`Zuletzt: ${this.listing.preis}€`)
+      .setName(t('modal.relist.field.price'))
+      .setDesc(t('modal.relist.field.priceDesc', { price: this.listing.preis }))
       .addText(text => text
         .setValue(this.preis.toString())
         .onChange(v => this.preis = parseFloat(v) || 0));
 
     if (this.listing.beschreibung) {
       new Setting(contentEl)
-        .setName('Beschreibung')
-        .setDesc('Zum Kopieren für Kleinanzeigen');
+        .setName(t('modal.relist.field.description'))
+        .setDesc(t('modal.relist.field.descriptionDesc'));
 
       const descBox = contentEl.createDiv({ cls: 'ka-desc-box' });
       descBox.setText(this.listing.beschreibung);
@@ -38,12 +39,12 @@ export class RelistModal extends Modal {
 
     new Setting(contentEl)
       .addButton(btn => btn
-        .setButtonText('Neu einstellen')
+        .setButtonText(t('modal.relist.submit'))
         .setCta()
         .onClick(() => {
-          if (this.preis <= 0) { new Notice('Bitte einen gültigen Preis eingeben.'); return; }
+          if (this.preis <= 0) { new Notice(t('notice.validation.priceRequired')); return; }
 
-          this.listing.status = 'Aktiv';
+          this.listing.status = 'active';
           this.listing.preis = this.preis;
           this.listing.eingestellt_am = todayString();
           this.listing.eingestellt_count += 1;
@@ -65,7 +66,7 @@ export class RelistModal extends Modal {
           this.close();
         }))
       .addButton(btn => btn
-        .setButtonText('Abbrechen')
+        .setButtonText(t('common.cancel'))
         .onClick(() => this.close()));
   }
 

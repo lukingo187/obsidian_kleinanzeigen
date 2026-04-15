@@ -10,6 +10,7 @@ import { RelistModal } from './modals/relistModal';
 import { Listing, PluginSettings, DEFAULT_SETTINGS, AIProvider } from './models/listing';
 import { AIService } from './services/aiService';
 import { SettingsTab } from './views/settingsTab';
+import { t, setLang } from './i18n';
 
 export default class KleinanzeigenPlugin extends Plugin {
   private vaultService!: VaultService;
@@ -17,6 +18,7 @@ export default class KleinanzeigenPlugin extends Plugin {
 
   async onload() {
     await this.loadSettings();
+    setLang(this.settings.language);
     this.addSettingTab(new SettingsTab(this.app, this));
     this.vaultService = new VaultService(this.app, () => this.settings.baseFolder);
 
@@ -31,19 +33,19 @@ export default class KleinanzeigenPlugin extends Plugin {
       }),
     );
 
-    this.addRibbonIcon('shopping-cart', 'Kleinanzeigen Dashboard', () => {
+    this.addRibbonIcon('shopping-cart', t('plugin.ribbonTooltip'), () => {
       this.activateDashboard();
     });
 
     this.addCommand({
       id: 'open-dashboard',
-      name: 'Dashboard öffnen',
+      name: t('plugin.cmd.openDashboard'),
       callback: () => this.activateDashboard(),
     });
 
     this.addCommand({
       id: 'new-item',
-      name: 'Neuer Artikel',
+      name: t('plugin.cmd.newItem'),
       callback: () => this.openNewItemModal(),
     });
   }
@@ -78,7 +80,7 @@ export default class KleinanzeigenPlugin extends Plugin {
           new PostCreationModal(this.app, listing).open();
         }
       } catch (e) {
-        new Notice(`Fehler beim Erstellen: ${e instanceof Error ? e.message : String(e)}`);
+        new Notice(t('notice.createError', { error: e instanceof Error ? e.message : String(e) }));
       }
     }).open();
   }
@@ -89,7 +91,7 @@ export default class KleinanzeigenPlugin extends Plugin {
         await this.vaultService.updateListing(updated);
         this.refreshDashboard();
       } catch (e) {
-        new Notice(`Fehler beim Speichern: ${e instanceof Error ? e.message : String(e)}`);
+        new Notice(t('notice.saveError', { error: e instanceof Error ? e.message : String(e) }));
       }
     }).open();
   }
@@ -100,7 +102,7 @@ export default class KleinanzeigenPlugin extends Plugin {
         await this.vaultService.updateListing(updated);
         this.refreshDashboard();
       } catch (e) {
-        new Notice(`Fehler beim Speichern: ${e instanceof Error ? e.message : String(e)}`);
+        new Notice(t('notice.saveError', { error: e instanceof Error ? e.message : String(e) }));
       }
     }).open();
   }
@@ -111,7 +113,7 @@ export default class KleinanzeigenPlugin extends Plugin {
         await this.vaultService.updateListing(updated);
         this.refreshDashboard();
       } catch (e) {
-        new Notice(`Fehler beim Speichern: ${e instanceof Error ? e.message : String(e)}`);
+        new Notice(t('notice.saveError', { error: e instanceof Error ? e.message : String(e) }));
       }
     }).open();
   }
@@ -122,7 +124,7 @@ export default class KleinanzeigenPlugin extends Plugin {
         await this.vaultService.updateListing(updated);
         this.refreshDashboard();
       } catch (e) {
-        new Notice(`Fehler beim Speichern: ${e instanceof Error ? e.message : String(e)}`);
+        new Notice(t('notice.saveError', { error: e instanceof Error ? e.message : String(e) }));
       }
     }).open();
   }

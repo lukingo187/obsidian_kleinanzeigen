@@ -1,5 +1,6 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
 import { Listing, ZUSTAND_OPTIONS, Zustand, Preisart, DEFAULT_CARRIER } from '../models/listing';
+import { t } from '../i18n';
 import { todayString } from '../utils/formatting';
 import { PortoState, renderCarrierPortoUI } from '../utils/portoUI';
 import type KleinanzeigenPlugin from '../main';
@@ -8,9 +9,9 @@ type Mode = 'manual' | 'ai' | 'template';
 
 export class NewItemModal extends Modal {
   private artikel = '';
-  private zustand: Zustand = 'Gut';
+  private zustand: Zustand = 'good';
   private preis = 0;
-  private preisart: Preisart = 'VB';
+  private preisart: Preisart = 'negotiable';
   private portoState: PortoState = { carrier: DEFAULT_CARRIER, portoName: undefined, portoPrice: undefined };
   private beschreibung = '';
   private mode: Mode;
@@ -51,7 +52,7 @@ export class NewItemModal extends Modal {
   private render(contentEl: HTMLElement) {
     contentEl.empty();
     contentEl.addClass('ka-modal');
-    contentEl.createEl('h2', { text: 'Neuer Artikel' });
+    contentEl.createEl('h2', { text: t('modal.newItem.title') });
 
     this.renderModeToggle(contentEl);
 
@@ -75,9 +76,9 @@ export class NewItemModal extends Modal {
     const templates = this.plugin.settings.templates ?? [];
 
     const modes: Array<{ id: Mode; label: string }> = [
-      { id: 'manual', label: 'Manuell' },
-      { id: 'ai', label: '✦ Mit KI' },
-      ...(templates.length > 0 ? [{ id: 'template' as Mode, label: 'Aus Template' }] : []),
+      { id: 'manual', label: t('modal.newItem.mode.manual') },
+      { id: 'ai', label: t('modal.newItem.mode.ai') },
+      ...(templates.length > 0 ? [{ id: 'template' as Mode, label: t('modal.newItem.mode.template') }] : []),
     ];
 
     for (const m of modes) {
@@ -103,26 +104,20 @@ export class NewItemModal extends Modal {
     const section = container.createDiv({ cls: 'ka-ai-section' });
 
     if (!this.hasApiKey()) {
-      section.createDiv({
-        cls: 'ka-ai-no-key',
-        text: 'Kein API-Key konfiguriert. Bitte unter Einstellungen → KI-Konfiguration hinterlegen.',
-      });
+      section.createDiv({ cls: 'ka-ai-no-key', text: t('modal.newItem.ai.noKey') });
       return;
     }
 
-    section.createEl('p', {
-      text: 'Beschreibe deinen Artikel — die KI füllt alle Felder automatisch aus.',
-      cls: 'ka-ai-hint',
-    });
+    section.createEl('p', { text: t('modal.newItem.ai.hint'), cls: 'ka-ai-hint' });
 
     const freeformArea = section.createEl('textarea', {
       cls: 'ka-textarea ka-freeform-input',
-      placeholder: 'z.B. "PS4 Spiel Spider-Man, kaum gespielt, kleiner Kratzer auf der Hülle, Großbrief reicht"',
+      placeholder: t('modal.newItem.ai.placeholder'),
     });
     freeformArea.rows = 3;
 
     const btnRow = section.createDiv({ cls: 'ka-ai-btn-row' });
-    const aiBtn = btnRow.createEl('button', { text: 'KI ausfüllen', cls: 'ka-ai-fill-btn' });
+    const aiBtn = btnRow.createEl('button', { text: t('modal.newItem.ai.button'), cls: 'ka-ai-fill-btn' });
 
     aiBtn.addEventListener('click', async () => {
       const text = freeformArea.value.trim();
@@ -131,7 +126,7 @@ export class NewItemModal extends Modal {
         return;
       }
 
-      aiBtn.textContent = 'Wird analysiert…';
+      aiBtn.textContent = t('modal.newItem.ai.loading');
       aiBtn.disabled = true;
 
       try {
@@ -158,12 +153,12 @@ export class NewItemModal extends Modal {
         this.descTextArea.value = parsed.beschreibung;
 
         if (this.fieldsContainer.style.display === 'none') {
-          this.revealFields(this.fieldsContainer, '✓ KI hat ausgefüllt — bitte prüfen');
+          this.revealFields(this.fieldsContainer, t('modal.newItem.ai.filled'));
         }
       } catch (e) {
-        new Notice(e instanceof Error ? e.message : 'Fehler bei der KI-Analyse.');
+        new Notice(e instanceof Error ? e.message : t('notice.ai.error'));
       } finally {
-        aiBtn.textContent = 'KI ausfüllen';
+        aiBtn.textContent = t('modal.newItem.ai.button');
         aiBtn.disabled = false;
       }
     });
@@ -174,23 +169,20 @@ export class NewItemModal extends Modal {
     const section = container.createDiv({ cls: 'ka-template-section' });
 
     if (templates.length === 0) {
-      section.createEl('p', {
-        text: 'Noch keine Templates vorhanden. Templates können unter Einstellungen erstellt werden.',
-        cls: 'ka-ai-hint',
-      });
+      section.createEl('p', { text: t('modal.newItem.template.none'), cls: 'ka-ai-hint' });
       return;
     }
 
-    section.createEl('p', { text: 'Template auswählen:', cls: 'ka-ai-hint' });
+    section.createEl('p', { text: t('modal.newItem.template.hint'), cls: 'ka-ai-hint' });
 
     const row = section.createDiv({ cls: 'ka-template-select-row' });
     const select = row.createEl('select', { cls: 'dropdown' });
-    select.createEl('option', { value: '', text: '— Template wählen —' });
+    select.createEl('option', { value: '', text: t('modal.newItem.template.empty') });
     for (const tpl of templates) {
       select.createEl('option', { value: tpl.id, text: tpl.name });
     }
 
-    const applyBtn = row.createEl('button', { text: 'Übernehmen', cls: 'ka-ai-fill-btn' });
+    const applyBtn = row.createEl('button', { text: t('modal.newItem.template.apply'), cls: 'ka-ai-fill-btn' });
     applyBtn.addEventListener('click', () => {
       const selected = templates.find(t => t.id === select.value);
       if (!selected) return;
@@ -210,15 +202,15 @@ export class NewItemModal extends Modal {
         this.descTextArea.value = selected.beschreibungsvorlage;
       }
 
-      new Notice(`Template "${selected.name}" übernommen.`);
+      new Notice(t('modal.newItem.template.applied', { name: selected.name }));
     });
   }
 
   private renderFields(container: HTMLElement) {
     new Setting(container)
-      .setName('Artikel *')
+      .setName(t('modal.newItem.field.name'))
       .addText(text => {
-        text.setPlaceholder('z.B. MacBook Pro 2020');
+        text.setPlaceholder(t('modal.newItem.field.namePlaceholder'));
         text.setValue(this.artikel);
         text.onChange(v => this.artikel = v);
         text.inputEl.addClass('ka-artikel-input');
@@ -226,25 +218,25 @@ export class NewItemModal extends Modal {
       });
 
     new Setting(container)
-      .setName('Preis (€) *')
+      .setName(t('modal.newItem.field.price'))
       .addText(text => {
-        text.setPlaceholder('25.00');
+        text.setPlaceholder(t('modal.newItem.field.pricePlaceholder'));
         text.setValue(this.preis > 0 ? this.preis.toString() : '');
         text.onChange(v => this.preis = parseFloat(v) || 0);
         this.preisInput = text.inputEl;
       })
       .addDropdown(dd => {
-        dd.addOption('VB', 'VB');
-        dd.addOption('Festpreis', 'Festpreis');
+        dd.addOption('negotiable', t('preisart.negotiable'));
+        dd.addOption('fixed', t('preisart.fixed'));
         dd.setValue(this.preisart);
         dd.onChange(v => this.preisart = v as Preisart);
         this.preisartSelect = dd.selectEl;
       });
 
     new Setting(container)
-      .setName('Zustand')
+      .setName(t('modal.newItem.field.condition'))
       .addDropdown(dd => {
-        for (const z of ZUSTAND_OPTIONS) dd.addOption(z, z);
+        for (const z of ZUSTAND_OPTIONS) dd.addOption(z, t(`zustand.${z}`));
         dd.setValue(this.zustand);
         dd.onChange(v => this.zustand = v as Zustand);
         this.zustandSelect = dd.selectEl;
@@ -254,9 +246,9 @@ export class NewItemModal extends Modal {
     this.portoRerender = rerender;
 
     new Setting(container)
-      .setName('Beschreibung')
+      .setName(t('modal.newItem.field.description'))
       .addTextArea(ta => {
-        ta.setPlaceholder('Artikelbeschreibung…');
+        ta.setPlaceholder(t('modal.newItem.field.descPlaceholder'));
         ta.setValue(this.beschreibung);
         ta.onChange(v => this.beschreibung = v);
         ta.inputEl.rows = 4;
@@ -266,18 +258,18 @@ export class NewItemModal extends Modal {
 
     new Setting(container)
       .addButton(btn => btn
-        .setButtonText('Einstellen')
+        .setButtonText(t('modal.newItem.submit'))
         .setCta()
         .onClick(() => {
-          if (!this.artikel.trim()) { new Notice('Bitte einen Artikelnamen eingeben.'); return; }
-          if (this.preis <= 0) { new Notice('Bitte einen gültigen Preis eingeben.'); return; }
+          if (!this.artikel.trim()) { new Notice(t('notice.validation.nameRequired')); return; }
+          if (this.preis <= 0) { new Notice(t('notice.validation.priceRequired')); return; }
 
           const today = todayString();
           const listing: Listing = {
             artikel: this.artikel.trim(),
             beschreibung: this.beschreibung || undefined,
             zustand: this.zustand,
-            status: 'Aktiv',
+            status: 'active',
             preis: this.preis,
             preisart: this.preisart,
             carrier: this.portoState.carrier,

@@ -1,5 +1,6 @@
 import { setIcon } from 'obsidian';
 import type { Listing, PluginSettings } from '../models/listing';
+import { t } from '../i18n';
 import { calculateStats, calculateMonthlyStats, calculateYearlyStats, calculateExtendedStats } from '../services/statsService';
 import { formatCurrency } from '../utils/formatting';
 import type { StatsState, StatsPeriod } from './dashboard-types';
@@ -12,14 +13,14 @@ function renderPeriodTable(container: HTMLElement, listings: Listing[], state: S
     : calculateYearlyStats(listings);
 
   if (periodData.length === 0) {
-    container.createDiv({ cls: 'ka-empty', text: 'Noch keine Daten vorhanden.' });
+    container.createDiv({ cls: 'ka-empty', text: t('stats.empty') });
     return;
   }
 
   const table = container.createEl('table', { cls: 'ka-table' });
   const thead = table.createEl('thead');
   const headerRow = thead.createEl('tr');
-  for (const col of ['Zeitraum', 'Eingestellt', 'Verkauft', 'Umsatz', 'Portokosten', 'Gewinn']) {
+  for (const col of [t('stats.col.period'), t('stats.col.listed'), t('stats.col.sold'), t('stats.col.revenue'), t('stats.col.shipping'), t('stats.col.profit')]) {
     headerRow.createEl('th', { text: col });
   }
 
@@ -47,14 +48,14 @@ export function renderStatsView(root: HTMLElement, listings: Listing[], state: S
 
   const statsGrid = root.createDiv({ cls: 'ka-stats-grid' });
   const cards: [string, string, string, string][] = [
-    [listings.length.toString(), 'Gesamt eingestellt', 'package', 'stats-listed'],
-    [totalStats.totalSoldCount.toString(), 'Gesamt verkauft', 'shopping-cart', 'stats-sold'],
-    [formatCurrency(totalStats.totalRevenue), 'Gesamt Umsatz', 'trending-up', 'stats-revenue'],
-    [formatCurrency(totalStats.totalProfit), 'Gesamt Gewinn', 'wallet', 'stats-profit'],
-    [extStats.avgSaleDurationDays !== null ? `${extStats.avgSaleDurationDays}d` : '—', 'Ø Verkaufsdauer', 'clock', 'stats-duration'],
-    [extStats.avgSalePrice !== null ? formatCurrency(extStats.avgSalePrice) : '—', 'Ø Verkaufspreis', 'tag', 'stats-avgprice'],
-    [formatCurrency(totalStats.totalShippingCost), 'Gesamtporto', 'truck', 'stats-shipping'],
-    [`$${aiCost.toFixed(4)}`, 'API-Kosten', 'cpu', 'stats-ai'],
+    [listings.length.toString(), t('stats.card.totalListed'), 'package', 'stats-listed'],
+    [totalStats.totalSoldCount.toString(), t('stats.card.totalSold'), 'shopping-cart', 'stats-sold'],
+    [formatCurrency(totalStats.totalRevenue), t('stats.card.totalRevenue'), 'trending-up', 'stats-revenue'],
+    [formatCurrency(totalStats.totalProfit), t('stats.card.totalProfit'), 'wallet', 'stats-profit'],
+    [extStats.avgSaleDurationDays !== null ? t('stats.durationDays', { days: extStats.avgSaleDurationDays }) : '—', t('stats.card.avgDuration'), 'clock', 'stats-duration'],
+    [extStats.avgSalePrice !== null ? formatCurrency(extStats.avgSalePrice) : '—', t('stats.card.avgPrice'), 'tag', 'stats-avgprice'],
+    [formatCurrency(totalStats.totalShippingCost), t('stats.card.totalShipping'), 'truck', 'stats-shipping'],
+    [`$${aiCost.toFixed(4)}`, t('stats.card.apiCost'), 'cpu', 'stats-ai'],
   ];
   for (let i = 0; i < cards.length; i++) {
     const [value, label, icon, accent] = cards[i];
@@ -69,7 +70,7 @@ export function renderStatsView(root: HTMLElement, listings: Listing[], state: S
   // Zeitraum-Toggle
   const toggle = root.createDiv({ cls: 'ka-filters' });
   const periodContainer = root.createDiv({ cls: 'ka-period-container' });
-  const periods: [StatsPeriod, string][] = [['monthly', 'Monatlich'], ['yearly', 'Jährlich']];
+  const periods: [StatsPeriod, string][] = [['monthly', t('stats.period.monthly')], ['yearly', t('stats.period.yearly')]];
   for (const [period, label] of periods) {
     const btn = toggle.createEl('button', {
       text: label,

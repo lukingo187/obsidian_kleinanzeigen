@@ -2,6 +2,7 @@ import { App, Modal, Notice, Setting } from 'obsidian';
 import { Listing, DEFAULT_CARRIER } from '../models/listing';
 import { todayString } from '../utils/formatting';
 import { PortoState, renderCarrierPortoUI } from '../utils/portoUI';
+import { t } from '../i18n';
 
 export class ShipModal extends Modal {
   private listing: Listing;
@@ -29,13 +30,13 @@ export class ShipModal extends Modal {
     const { contentEl } = this;
     contentEl.addClass('ka-modal');
 
-    contentEl.createEl('h2', { text: `Verschicken — ${this.listing.artikel}` });
+    contentEl.createEl('h2', { text: `${t('modal.ship.title')} — ${this.listing.artikel}` });
 
     const addrContainer = contentEl.createDiv();
     new Setting(addrContainer)
-      .setName('Anschrift *')
+      .setName(t('modal.ship.field.address'))
       .addTextArea(ta => {
-        ta.setPlaceholder('Name\nStraße Nr.\nPLZ Ort');
+        ta.setPlaceholder(t('modal.ship.field.addressPlaceholder'));
         ta.setValue(this.anschrift);
         ta.onChange(v => this.anschrift = v);
         ta.inputEl.rows = 3;
@@ -64,12 +65,12 @@ export class ShipModal extends Modal {
 
     new Setting(contentEl)
       .addButton(btn => btn
-        .setButtonText('Als verschickt markieren')
+        .setButtonText(t('modal.ship.submit'))
         .setCta()
         .onClick(() => {
-          if (!isAbholung() && !this.anschrift.trim()) { new Notice('Bitte eine Anschrift eingeben.'); return; }
+          if (!isAbholung() && !this.anschrift.trim()) { new Notice(t('notice.validation.addressRequired')); return; }
 
-          this.listing.status = 'Verschickt';
+          this.listing.status = 'shipped';
           this.listing.verschickt = true;
           this.listing.verschickt_am = todayString();
           this.listing.anschrift = this.anschrift.trim();
@@ -83,7 +84,7 @@ export class ShipModal extends Modal {
           this.close();
         }))
       .addButton(btn => btn
-        .setButtonText('Abbrechen')
+        .setButtonText(t('common.cancel'))
         .onClick(() => this.close()));
   }
 

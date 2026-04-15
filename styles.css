@@ -3,12 +3,12 @@
   --ka-accent-end: #7c4dff;
   --ka-accent-shadow: rgba(124, 77, 255, 0.25);
   --ka-accent-glow: rgba(124, 77, 255, 0.1);
-  --ka-color-aktiv: #00c853;
-  --ka-color-verkauft: #ffc107;
-  --ka-color-verschickt: #2196f3;
-  --ka-color-abgeschlossen: #26a69a;
-  --ka-color-abgelaufen: #9e9e9e;
-  --ka-color-archiviert: #888;
+  --ka-color-active: #00c853;
+  --ka-color-sold: #ffc107;
+  --ka-color-shipped: #2196f3;
+  --ka-color-completed: #26a69a;
+  --ka-color-expired: #9e9e9e;
+  --ka-color-archived: #888;
   --ka-color-error: #f44336;
   --ka-color-gewinn: #66bb6a;
   --ka-color-duration: #ab47bc;
@@ -141,13 +141,13 @@
 
 /* Stats tab card accents */
 .ka-stats-listed .ka-stat-icon, .ka-stats-listed .ka-stat-value { color: var(--interactive-accent); }
-.ka-stats-sold .ka-stat-icon, .ka-stats-sold .ka-stat-value { color: var(--ka-color-verkauft); }
+.ka-stats-sold .ka-stat-icon, .ka-stats-sold .ka-stat-value { color: var(--ka-color-sold); }
 .ka-stats-revenue .ka-stat-icon, .ka-stats-revenue .ka-stat-value { color: var(--ka-accent-end); }
-.ka-stats-profit .ka-stat-icon, .ka-stats-profit .ka-stat-value { color: var(--ka-color-abgeschlossen); }
+.ka-stats-profit .ka-stat-icon, .ka-stats-profit .ka-stat-value { color: var(--ka-color-completed); }
 .ka-stats-duration .ka-stat-icon, .ka-stats-duration .ka-stat-value { color: var(--ka-color-duration); }
 .ka-stats-avgprice .ka-stat-icon, .ka-stats-avgprice .ka-stat-value { color: var(--ka-color-avgprice); }
-.ka-stats-shipping .ka-stat-icon, .ka-stats-shipping .ka-stat-value { color: var(--ka-color-verschickt); }
-.ka-stats-ai .ka-stat-icon, .ka-stats-ai .ka-stat-value { color: var(--ka-color-abgelaufen); }
+.ka-stats-shipping .ka-stat-icon, .ka-stats-shipping .ka-stat-value { color: var(--ka-color-shipped); }
+.ka-stats-ai .ka-stat-icon, .ka-stats-ai .ka-stat-value { color: var(--ka-color-expired); }
 
 .ka-stat-card {
   background: var(--background-secondary);
@@ -164,10 +164,10 @@
 }
 
 /* Status accent colors — icon + value color on stat cards */
-.ka-accent-aktiv .ka-stat-icon, .ka-accent-aktiv .ka-stat-value { color: var(--ka-color-aktiv); }
-.ka-accent-verkauft .ka-stat-icon, .ka-accent-verkauft .ka-stat-value { color: var(--ka-color-verkauft); }
-.ka-accent-verschickt .ka-stat-icon, .ka-accent-verschickt .ka-stat-value { color: var(--ka-color-verschickt); }
-.ka-accent-abgeschlossen .ka-stat-icon, .ka-accent-abgeschlossen .ka-stat-value { color: var(--ka-color-abgeschlossen); }
+.ka-accent-active .ka-stat-icon, .ka-accent-active .ka-stat-value { color: var(--ka-color-active); }
+.ka-accent-sold .ka-stat-icon, .ka-accent-sold .ka-stat-value { color: var(--ka-color-sold); }
+.ka-accent-shipped .ka-stat-icon, .ka-accent-shipped .ka-stat-value { color: var(--ka-color-shipped); }
+.ka-accent-completed .ka-stat-icon, .ka-accent-completed .ka-stat-value { color: var(--ka-color-completed); }
 
 .ka-stat-value {
   font-size: 1.4em;
@@ -468,12 +468,12 @@
 }
 
 /* Subtle status indicator on row left edge */
-.ka-row[data-status="aktiv"] td:first-child { box-shadow: inset 3px 0 0 var(--ka-color-aktiv); }
-.ka-row[data-status="verkauft"] td:first-child { box-shadow: inset 3px 0 0 var(--ka-color-verkauft); }
-.ka-row[data-status="verschickt"] td:first-child { box-shadow: inset 3px 0 0 var(--ka-color-verschickt); }
-.ka-row[data-status="abgeschlossen"] td:first-child { box-shadow: inset 3px 0 0 var(--ka-color-abgeschlossen); }
-.ka-row[data-status="abgelaufen"] td:first-child { box-shadow: inset 3px 0 0 var(--ka-color-abgelaufen); }
-.ka-row[data-status="archiviert"] td:first-child { box-shadow: inset 3px 0 0 var(--ka-color-archiviert); }
+.ka-row[data-status="active"] td:first-child { box-shadow: inset 3px 0 0 var(--ka-color-active); }
+.ka-row[data-status="sold"] td:first-child { box-shadow: inset 3px 0 0 var(--ka-color-sold); }
+.ka-row[data-status="shipped"] td:first-child { box-shadow: inset 3px 0 0 var(--ka-color-shipped); }
+.ka-row[data-status="completed"] td:first-child { box-shadow: inset 3px 0 0 var(--ka-color-completed); }
+.ka-row[data-status="expired"] td:first-child { box-shadow: inset 3px 0 0 var(--ka-color-expired); }
+.ka-row[data-status="archived"] td:first-child { box-shadow: inset 3px 0 0 var(--ka-color-archived); }
 
 /* Status badges */
 .ka-badge {
@@ -496,12 +496,12 @@
   height: 14px;
 }
 
-.ka-status-aktiv { background: color-mix(in srgb, var(--ka-color-aktiv) 15%, transparent); color: var(--ka-color-aktiv); }
-.ka-status-verkauft { background: color-mix(in srgb, var(--ka-color-verkauft) 15%, transparent); color: var(--ka-color-verkauft); }
-.ka-status-verschickt { background: color-mix(in srgb, var(--ka-color-verschickt) 15%, transparent); color: var(--ka-color-verschickt); }
-.ka-status-abgeschlossen { background: color-mix(in srgb, var(--ka-color-abgeschlossen) 15%, transparent); color: var(--ka-color-abgeschlossen); }
-.ka-status-abgelaufen { background: color-mix(in srgb, var(--ka-color-abgelaufen) 15%, transparent); color: var(--ka-color-abgelaufen); }
-.ka-status-archiviert { background: color-mix(in srgb, var(--ka-color-archiviert) 12%, transparent); color: var(--ka-color-archiviert); }
+.ka-status-active { background: color-mix(in srgb, var(--ka-color-active) 15%, transparent); color: var(--ka-color-active); }
+.ka-status-sold { background: color-mix(in srgb, var(--ka-color-sold) 15%, transparent); color: var(--ka-color-sold); }
+.ka-status-shipped { background: color-mix(in srgb, var(--ka-color-shipped) 15%, transparent); color: var(--ka-color-shipped); }
+.ka-status-completed { background: color-mix(in srgb, var(--ka-color-completed) 15%, transparent); color: var(--ka-color-completed); }
+.ka-status-expired { background: color-mix(in srgb, var(--ka-color-expired) 15%, transparent); color: var(--ka-color-expired); }
+.ka-status-archived { background: color-mix(in srgb, var(--ka-color-archived) 12%, transparent); color: var(--ka-color-archived); }
 
 /* Action buttons */
 .ka-actions {
@@ -524,23 +524,23 @@
   background: var(--background-modifier-hover);
 }
 
-.ka-sold-btn { border-color: var(--ka-color-verkauft); color: var(--ka-color-verkauft); }
-.ka-sold-btn:hover { background: color-mix(in srgb, var(--ka-color-verkauft) 15%, transparent); }
+.ka-sold-btn { border-color: var(--ka-color-sold); color: var(--ka-color-sold); }
+.ka-sold-btn:hover { background: color-mix(in srgb, var(--ka-color-sold) 15%, transparent); }
 
-.ka-ship-btn { border-color: var(--ka-color-verschickt); color: var(--ka-color-verschickt); }
-.ka-ship-btn:hover { background: color-mix(in srgb, var(--ka-color-verschickt) 15%, transparent); }
+.ka-ship-btn { border-color: var(--ka-color-shipped); color: var(--ka-color-shipped); }
+.ka-ship-btn:hover { background: color-mix(in srgb, var(--ka-color-shipped) 15%, transparent); }
 
-.ka-complete-btn { border-color: var(--ka-color-abgeschlossen); color: var(--ka-color-abgeschlossen); }
-.ka-complete-btn:hover { background: color-mix(in srgb, var(--ka-color-abgeschlossen) 15%, transparent); }
+.ka-complete-btn { border-color: var(--ka-color-completed); color: var(--ka-color-completed); }
+.ka-complete-btn:hover { background: color-mix(in srgb, var(--ka-color-completed) 15%, transparent); }
 
-.ka-relist-btn { border-color: var(--ka-color-abgelaufen); color: var(--text-normal); }
+.ka-relist-btn { border-color: var(--ka-color-expired); color: var(--text-normal); }
 .ka-relist-btn:hover { background: var(--background-modifier-hover); }
 
-.ka-expired-btn { border-color: var(--ka-color-abgelaufen); color: var(--ka-color-abgelaufen); }
-.ka-expired-btn:hover { background: color-mix(in srgb, var(--ka-color-abgelaufen) 15%, transparent); }
+.ka-expired-btn { border-color: var(--ka-color-expired); color: var(--ka-color-expired); }
+.ka-expired-btn:hover { background: color-mix(in srgb, var(--ka-color-expired) 15%, transparent); }
 
-.ka-archive-action-btn { border-color: var(--ka-color-archiviert); color: var(--ka-color-archiviert); }
-.ka-archive-action-btn:hover { background: color-mix(in srgb, var(--ka-color-archiviert) 12%, transparent); }
+.ka-archive-action-btn { border-color: var(--ka-color-archived); color: var(--ka-color-archived); }
+.ka-archive-action-btn:hover { background: color-mix(in srgb, var(--ka-color-archived) 12%, transparent); }
 
 .ka-delete-btn { border-color: var(--ka-color-error); color: var(--ka-color-error); }
 .ka-delete-btn:hover { background: color-mix(in srgb, var(--ka-color-error) 10%, transparent); }
@@ -862,7 +862,7 @@
 }
 
 .ka-profit-positive {
-  color: var(--ka-color-abgeschlossen);
+  color: var(--ka-color-completed);
   font-weight: 600;
 }
 
@@ -1065,7 +1065,7 @@
 }
 
 .ka-test-ok {
-  color: var(--ka-color-aktiv);
+  color: var(--ka-color-active);
 }
 
 .ka-test-fail {

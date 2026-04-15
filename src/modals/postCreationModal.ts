@@ -1,5 +1,6 @@
 import { App, Modal } from 'obsidian';
 import { Listing } from '../models/listing';
+import { t } from '../i18n';
 
 export class PostCreationModal extends Modal {
   private listing: Listing;
@@ -14,19 +15,19 @@ export class PostCreationModal extends Modal {
     const { contentEl } = this;
     contentEl.addClass('ka-modal');
 
-    contentEl.createEl('h2', { text: 'Artikel gespeichert!' });
+    contentEl.createEl('h2', { text: t('modal.postCreate.title') });
     contentEl.createEl('p', {
-      text: 'Kopiere Titel und Beschreibung, um das Inserat auf Kleinanzeigen einzustellen.',
+      text: t('modal.postCreate.hint'),
       cls: 'ka-ai-hint',
     });
 
-    this.renderCopyRow(contentEl, 'Titel', this.listing.artikel);
+    this.renderCopyRow(contentEl, t('modal.postCreate.label.title'), this.listing.artikel);
 
     if (this.listing.beschreibung) {
-      this.renderCopyRow(contentEl, 'Beschreibung', this.listing.beschreibung);
+      this.renderCopyRow(contentEl, t('modal.postCreate.label.desc'), this.listing.beschreibung);
     }
 
-    const closeBtn = contentEl.createEl('button', { text: 'Schließen', cls: 'ka-close-btn' });
+    const closeBtn = contentEl.createEl('button', { text: t('common.close'), cls: 'ka-close-btn' });
     closeBtn.addEventListener('click', () => this.close());
   }
 
@@ -34,17 +35,17 @@ export class PostCreationModal extends Modal {
     const row = container.createDiv({ cls: 'ka-copy-row' });
     row.createEl('span', { text: label, cls: 'ka-copy-label' });
     const preview = row.createEl('span', { text: value, cls: 'ka-copy-preview' });
-    const btn = row.createEl('button', { text: 'Kopieren', cls: 'ka-copy-btn' });
+    const btn = row.createEl('button', { text: t('modal.postCreate.copy'), cls: 'ka-copy-btn' });
 
     btn.addEventListener('click', async () => {
       await navigator.clipboard.writeText(value);
-      btn.textContent = '✓ Kopiert!';
+      btn.textContent = t('modal.postCreate.copied');
       preview.addClass('ka-copy-preview-flash');
-      const t = setTimeout(() => {
-        btn.textContent = 'Kopieren';
+      const timer = setTimeout(() => {
+        btn.textContent = t('modal.postCreate.copy');
         preview.removeClass('ka-copy-preview-flash');
       }, 2000);
-      this.timers.push(t);
+      this.timers.push(timer);
     });
   }
 

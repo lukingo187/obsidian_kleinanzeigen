@@ -1,5 +1,6 @@
 import { App, Notice, setIcon } from 'obsidian';
 import type { Listing, Status } from '../models/listing';
+import { t } from '../i18n';
 import { VaultService } from '../services/vaultService';
 import { calculateStats } from '../services/statsService';
 import { ExportService } from '../services/exportService';
@@ -11,10 +12,10 @@ import { renderStatusBadge, addSectionHeader, addDetailRow, createCopyButton } f
 function getFilteredListings(listings: Listing[], state: OverviewState): Listing[] {
   let filtered: Listing[];
 
-  if (state.filter === 'Archiv') {
-    filtered = listings.filter(l => l.status === 'Archiviert');
-  } else if (state.filter === 'Alle') {
-    filtered = listings.filter(l => l.status !== 'Archiviert');
+  if (state.filter === 'archive') {
+    filtered = listings.filter(l => l.status === 'archived');
+  } else if (state.filter === 'all') {
+    filtered = listings.filter(l => l.status !== 'archived');
   } else {
     filtered = listings.filter(l => l.status === state.filter);
   }
@@ -60,10 +61,10 @@ function renderSummaryStats(root: HTMLElement, listings: Listing[]) {
   const statsEl = root.createDiv({ cls: 'ka-stats' });
 
   const items: [string, string, string, string][] = [
-    ['Aktiv', stats.activeCount.toString(), 'circle-dot', 'aktiv'],
-    ['Verkauft', stats.soldCount.toString(), 'banknote', 'verkauft'],
-    ['Verschickt', stats.shippedCount.toString(), 'truck', 'verschickt'],
-    ['Abgeschlossen', stats.completedCount.toString(), 'circle-check', 'abgeschlossen'],
+    [t('status.active'), stats.activeCount.toString(), 'circle-dot', 'active'],
+    [t('status.sold'), stats.soldCount.toString(), 'banknote', 'sold'],
+    [t('status.shipped'), stats.shippedCount.toString(), 'truck', 'shipped'],
+    [t('status.completed'), stats.completedCount.toString(), 'circle-check', 'completed'],
   ];
 
   for (const [label, value, icon, accent] of items) {
@@ -77,11 +78,18 @@ function renderSummaryStats(root: HTMLElement, listings: Listing[]) {
 
 function renderFilters(root: HTMLElement, state: OverviewState, actions: DashboardActions) {
   const filtersEl = root.createDiv({ cls: 'ka-filters' });
-  const options: FilterStatus[] = ['Alle', 'Aktiv', 'Verkauft', 'Verschickt', 'Abgeschlossen', 'Abgelaufen'];
+  const options: [FilterStatus, string][] = [
+    ['all', t('overview.filter.all')],
+    ['active', t('status.active')],
+    ['sold', t('status.sold')],
+    ['shipped', t('status.shipped')],
+    ['completed', t('status.completed')],
+    ['expired', t('status.expired')],
+  ];
 
-  for (const opt of options) {
+  for (const [opt, label] of options) {
     const btn = filtersEl.createEl('button', {
-      text: opt,
+      text: label,
       cls: `ka-filter-btn ${state.filter === opt ? 'ka-filter-active' : ''}`,
     });
     btn.addEventListener('click', () => {
@@ -94,11 +102,11 @@ function renderFilters(root: HTMLElement, state: OverviewState, actions: Dashboa
 
   filtersEl.createDiv({ cls: 'ka-filter-spacer' });
   const archivBtn = filtersEl.createEl('button', {
-    text: 'Archiv',
-    cls: `ka-filter-btn ${state.filter === 'Archiv' ? 'ka-filter-active' : ''}`,
+    text: t('overview.filter.archive'),
+    cls: `ka-filter-btn ${state.filter === 'archive' ? 'ka-filter-active' : ''}`,
   });
   archivBtn.addEventListener('click', () => {
-    state.filter = 'Archiv';
+    state.filter = 'archive';
     state.expandedListing = null;
     state.selectedPaths.clear();
     actions.render();
@@ -109,7 +117,7 @@ function renderSearch(root: HTMLElement, state: OverviewState, renderTableOnly: 
   const searchEl = root.createDiv({ cls: 'ka-search' });
   const input = searchEl.createEl('input', {
     type: 'text',
-    placeholder: 'Suche nach Artikel...',
+    placeholder: t('overview.search'),
     cls: 'ka-search-input',
   });
   input.value = state.searchQuery;
@@ -138,49 +146,49 @@ function renderBulkBar(
   if (selected.length === 0) return;
 
   const bar = root.createDiv({ cls: 'ka-bulk-bar' });
-  bar.createSpan({ text: `${selected.length} Artikel ausgewählt` });
+  bar.createSpan({ text: t('overview.bulk.selected', { count: selected.length }) });
 
   const actionsEl = bar.createDiv({ cls: 'ka-bulk-actions' });
 
-  if (selected.every(l => l.status === 'Abgeschlossen')) {
-    const btn = actionsEl.createEl('button', { text: 'Archivieren', cls: 'ka-action-btn ka-archive-action-btn' });
+  if (selected.every(l => l.status === 'completed')) {
+    const btn = actionsEl.createEl('button', { text: t('overview.bulk.archive'), cls: 'ka-action-btn ka-archive-action-btn' });
     btn.addEventListener('click', async () => {
       let failed = 0;
       for (const l of selected) {
-        try { await vaultService.updateListing({ ...l, status: 'Archiviert' }); }
+        try { await vaultService.updateListing({ ...l, status: 'archived' }); }
         catch { failed++; }
       }
       state.selectedPaths.clear();
-      if (failed > 0) new Notice(`${failed} von ${selected.length} Artikeln konnten nicht archiviert werden.`);
+      if (failed > 0) new Notice(t('overview.error.archiveFailed', { failed, total: selected.length }));
       actions.refreshAfterWrite();
     });
   }
 
-  if (selected.every(l => l.status === 'Aktiv')) {
-    const btn = actionsEl.createEl('button', { text: 'Abgelaufen', cls: 'ka-action-btn ka-expired-btn' });
+  if (selected.every(l => l.status === 'active')) {
+    const btn = actionsEl.createEl('button', { text: t('overview.bulk.expire'), cls: 'ka-action-btn ka-expired-btn' });
     btn.addEventListener('click', async () => {
       let failed = 0;
       for (const l of selected) {
-        try { await vaultService.updateListing({ ...l, status: 'Abgelaufen' }); }
+        try { await vaultService.updateListing({ ...l, status: 'expired' }); }
         catch { failed++; }
       }
       state.selectedPaths.clear();
-      if (failed > 0) new Notice(`${failed} von ${selected.length} Artikeln konnten nicht aktualisiert werden.`);
+      if (failed > 0) new Notice(t('overview.error.expireFailed', { failed, total: selected.length }));
       actions.refreshAfterWrite();
     });
   }
 
-  if (selected.every(l => l.status === 'Archiviert')) {
-    const btn = actionsEl.createEl('button', { text: 'Löschen', cls: 'ka-action-btn ka-delete-btn' });
+  if (selected.every(l => l.status === 'archived')) {
+    const btn = actionsEl.createEl('button', { text: t('common.delete'), cls: 'ka-action-btn ka-delete-btn' });
     btn.addEventListener('click', () => {
-      new ConfirmModal(app, `${selected.length} Artikel wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`, async () => {
+      new ConfirmModal(app, t('overview.confirm.delete', { name: `${selected.length} items` }), async () => {
         let failed = 0;
         for (const l of selected) {
           try { await vaultService.deleteListing(l); }
           catch { failed++; }
         }
         state.selectedPaths.clear();
-        if (failed > 0) new Notice(`${failed} von ${selected.length} Artikeln konnten nicht gelöscht werden.`);
+        if (failed > 0) new Notice(t('overview.error.deleteFailed', { failed, total: selected.length }));
         actions.refreshAfterWrite();
       }).open();
     });
@@ -189,12 +197,12 @@ function renderBulkBar(
   const exportWrapper = actionsEl.createDiv({ cls: 'ka-export-wrapper' });
   const exportBtn = exportWrapper.createEl('button', { cls: 'ka-action-btn ka-export-btn' });
   setIcon(exportBtn.createSpan(), 'share');
-  exportBtn.createSpan({ text: ' Exportieren' });
+  exportBtn.createSpan({ text: ` ${t('overview.bulk.export')}` });
 
   const dropdown = exportWrapper.createDiv({ cls: 'ka-export-dropdown' });
   const csvOption = dropdown.createEl('button', { cls: 'ka-export-dropdown-item' });
   setIcon(csvOption.createSpan({ cls: 'ka-export-dropdown-icon' }), 'file-spreadsheet');
-  csvOption.createSpan({ text: 'CSV exportieren' });
+  csvOption.createSpan({ text: t('overview.export.csv') });
   const closeDropdown = () => {
     dropdown.removeClass('ka-export-dropdown-visible');
     setTimeout(() => dropdown.removeClass('ka-export-dropdown-open'), 150);
@@ -206,7 +214,7 @@ function renderBulkBar(
   });
   const pdfOption = dropdown.createEl('button', { cls: 'ka-export-dropdown-item' });
   setIcon(pdfOption.createSpan({ cls: 'ka-export-dropdown-icon' }), 'file-text');
-  pdfOption.createSpan({ text: 'PDF exportieren' });
+  pdfOption.createSpan({ text: t('overview.export.pdf') });
   pdfOption.addEventListener('click', () => {
     ExportService.exportPDF(selected);
     closeDropdown();
@@ -248,7 +256,7 @@ function renderTable(
   const filtered = getFilteredListings(listings, state);
 
   if (filtered.length === 0) {
-    root.createDiv({ cls: 'ka-empty', text: 'Keine Artikel gefunden.' });
+    root.createDiv({ cls: 'ka-empty', text: t('overview.empty') });
     return;
   }
 
@@ -273,7 +281,11 @@ function renderTable(
 
   type SortKey = OverviewState['sortColumn'];
   const sortableColumns: [string, SortKey][] = [
-    ['Artikel', 'artikel'], ['Preis', 'preis'], ['Versand', 'versand'], ['Eingestellt', 'eingestellt'], ['Status', 'status'],
+    [t('overview.col.item'), 'artikel'],
+    [t('overview.col.price'), 'preis'],
+    [t('overview.col.shipping'), 'versand'],
+    [t('overview.col.listed'), 'eingestellt'],
+    [t('overview.col.status'), 'status'],
   ];
   for (const [label, key] of sortableColumns) {
     const th = headerRow.createEl('th', { cls: 'ka-th-sortable' });
@@ -293,7 +305,7 @@ function renderTable(
       renderTableOnly();
     });
   }
-  headerRow.createEl('th', { text: 'Aktionen' });
+  headerRow.createEl('th', { text: t('overview.col.actions') });
 
   const tbody = table.createEl('tbody');
   for (let i = 0; i < filtered.length; i++) {
@@ -344,16 +356,16 @@ function renderActions(
   context: 'table' | 'detail' = 'table',
 ) {
   const actionMap: Partial<Record<Status, { label: string; cls: string; handler: () => void }[]>> = {
-    'Aktiv': context === 'detail'
+    active: context === 'detail'
       ? [
-          { label: 'Verkauft', cls: 'ka-sold-btn', handler: () => callbacks.onSold(listing) },
-          { label: 'Abgelaufen', cls: 'ka-expired-btn', handler: () => actions.transitionStatus(listing, 'Abgelaufen') },
+          { label: t('overview.action.sell'),   cls: 'ka-sold-btn',    handler: () => callbacks.onSold(listing) },
+          { label: t('overview.action.expire'),  cls: 'ka-expired-btn', handler: () => actions.transitionStatus(listing, 'expired') },
         ]
-      : [{ label: 'Verkauft', cls: 'ka-sold-btn', handler: () => callbacks.onSold(listing) }],
-    'Verkauft': [{ label: 'Verschicken', cls: 'ka-ship-btn', handler: () => callbacks.onShip(listing) }],
-    'Verschickt': [{ label: 'Abschließen', cls: 'ka-complete-btn', handler: () => actions.transitionStatus(listing, 'Abgeschlossen') }],
-    'Abgeschlossen': [{ label: 'Archivieren', cls: 'ka-archive-action-btn', handler: () => actions.transitionStatus(listing, 'Archiviert') }],
-    'Abgelaufen': [{ label: 'Neu einstellen', cls: 'ka-relist-btn', handler: () => callbacks.onRelist(listing) }],
+      : [{ label: t('overview.action.sell'), cls: 'ka-sold-btn', handler: () => callbacks.onSold(listing) }],
+    sold:      [{ label: t('overview.action.ship'),     cls: 'ka-ship-btn',          handler: () => callbacks.onShip(listing) }],
+    shipped:   [{ label: t('overview.action.complete'), cls: 'ka-complete-btn',      handler: () => actions.transitionStatus(listing, 'completed') }],
+    completed: [{ label: t('overview.action.archive'),  cls: 'ka-archive-action-btn',handler: () => actions.transitionStatus(listing, 'archived') }],
+    expired:   [{ label: t('overview.action.relist'),   cls: 'ka-relist-btn',        handler: () => callbacks.onRelist(listing) }],
   };
 
   const actionList = actionMap[listing.status];
@@ -364,11 +376,11 @@ function renderActions(
     }
   }
 
-  if (listing.status === 'Archiviert') {
-    const delBtn = cell.createEl('button', { text: 'Löschen', cls: 'ka-action-btn ka-delete-btn' });
+  if (listing.status === 'archived') {
+    const delBtn = cell.createEl('button', { text: t('common.delete'), cls: 'ka-action-btn ka-delete-btn' });
     delBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      new ConfirmModal(app, `"${listing.artikel}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`, async () => {
+      new ConfirmModal(app, t('overview.confirm.delete', { name: listing.artikel }), async () => {
         await vaultService.deleteListing(listing);
         if (state.expandedListing?.filePath === listing.filePath) {
           state.expandedListing = null;
@@ -380,21 +392,21 @@ function renderActions(
 
   if (context === 'detail') {
     const prevStatus: Partial<Record<Status, Status>> = {
-      'Verkauft': 'Aktiv',
-      'Verschickt': 'Verkauft',
-      'Abgeschlossen': 'Verschickt',
-      'Abgelaufen': 'Aktiv',
-      'Archiviert': 'Abgeschlossen',
+      sold:      'active',
+      shipped:   'sold',
+      completed: 'shipped',
+      expired:   'active',
+      archived:  'completed',
     };
     const prev = prevStatus[listing.status];
     if (prev) {
       const undoBtn = cell.createEl('button', {
         cls: 'ka-action-btn ka-undo-btn',
-        attr: { 'aria-label': `Zurück zu ${prev}` },
+        attr: { 'aria-label': t('overview.action.undoTo', { status: t(`status.${prev}`) }) },
       });
       const iconSpan = undoBtn.createSpan({ cls: 'ka-undo-icon' });
       setIcon(iconSpan, 'undo-2');
-      undoBtn.createSpan({ text: prev, cls: 'ka-undo-label' });
+      undoBtn.createSpan({ text: t(`status.${prev}`), cls: 'ka-undo-label' });
       undoBtn.addEventListener('click', (e) => { e.stopPropagation(); actions.undoStatus(listing, prev); });
     }
   }
@@ -411,7 +423,7 @@ function renderDetail(
 ) {
   const detail = root.createDiv({ cls: 'ka-detail' });
 
-  const backBtn = detail.createEl('button', { text: '← Zurück zur Liste', cls: 'ka-back-btn' });
+  const backBtn = detail.createEl('button', { text: t('overview.back'), cls: 'ka-back-btn' });
   backBtn.addEventListener('click', () => {
     state.expandedListing = null;
     actions.render();
@@ -421,67 +433,67 @@ function renderDetail(
   titleRow.createEl('h3', { text: listing.artikel });
   const badge = titleRow.createSpan({ cls: `ka-badge ka-status-${listing.status.toLowerCase()}` });
   renderStatusBadge(badge, listing.status);
-  createCopyButton(titleRow, 'Titel kopieren', listing.artikel);
+  createCopyButton(titleRow, t('overview.copy.title'), listing.artikel);
 
   const grid = detail.createDiv({ cls: 'ka-detail-grid' });
 
-  // Inserat
+  // Listing info
   const listingSection = grid.createDiv({ cls: 'ka-detail-section' });
-  addSectionHeader(listingSection, 'Inserat', () => callbacks.onEditListing(listing));
-  addDetailRow(listingSection, 'Preis', `${formatCurrency(listing.preis)} ${listing.preisart ?? ''}`);
-  addDetailRow(listingSection, 'Versand', formatPortoDisplay(listing.carrier, listing.porto_name, listing.porto_price));
+  addSectionHeader(listingSection, t('overview.detail.listing'), () => callbacks.onEditListing(listing));
+  addDetailRow(listingSection, t('overview.detail.price'), `${formatCurrency(listing.preis)} ${listing.preisart ? t(`preisart.${listing.preisart}`) : ''}`);
+  addDetailRow(listingSection, t('overview.detail.shippingCost'), formatPortoDisplay(listing.carrier, listing.porto_name, listing.porto_price));
   if (listing.eingestellt_am) {
-    addDetailRow(listingSection, 'Eingestellt am', formatDateDE(listing.eingestellt_am));
+    addDetailRow(listingSection, t('overview.detail.listedOn'), formatDateDE(listing.eingestellt_am));
   }
   if (listing.erstmals_eingestellt_am) {
-    addDetailRow(listingSection, 'Erstmals eingestellt', formatDateDE(listing.erstmals_eingestellt_am));
+    addDetailRow(listingSection, t('overview.detail.firstListed'), formatDateDE(listing.erstmals_eingestellt_am));
   }
-  addDetailRow(listingSection, 'Anzahl Einstellungen', listing.eingestellt_count.toString());
-  addDetailRow(listingSection, 'Zustand', listing.zustand);
+  addDetailRow(listingSection, t('overview.detail.listingCount'), listing.eingestellt_count.toString());
+  addDetailRow(listingSection, t('overview.detail.condition'), t(`zustand.${listing.zustand}`));
 
-  // Verkauf
+  // Sale info
   if (listing.verkauft) {
     const saleSection = grid.createDiv({ cls: 'ka-detail-section' });
-    addSectionHeader(saleSection, 'Verkauf', () => callbacks.onSold(listing));
-    if (listing.verkauft_fuer != null) addDetailRow(saleSection, 'Verkauft für', formatCurrency(listing.verkauft_fuer));
-    if (listing.verkauft_am) addDetailRow(saleSection, 'Verkauft am', formatDateDE(listing.verkauft_am));
-    if (listing.bezahlart) addDetailRow(saleSection, 'Bezahlart', listing.bezahlart);
-    addDetailRow(saleSection, 'Bezahlt', listing.bezahlt ? '✓ Ja' : '✗ Nein');
-    if (listing.bezahlt_am) addDetailRow(saleSection, 'Bezahlt am', formatDateDE(listing.bezahlt_am));
+    addSectionHeader(saleSection, t('overview.detail.sale'), () => callbacks.onSold(listing));
+    if (listing.verkauft_fuer != null) addDetailRow(saleSection, t('overview.detail.soldFor'), formatCurrency(listing.verkauft_fuer));
+    if (listing.verkauft_am) addDetailRow(saleSection, t('overview.detail.soldOn'), formatDateDE(listing.verkauft_am));
+    if (listing.bezahlart) addDetailRow(saleSection, t('overview.detail.paymentMethod'), listing.bezahlart);
+    addDetailRow(saleSection, t('overview.detail.paid'), listing.bezahlt ? t('common.yes') : t('common.no'));
+    if (listing.bezahlt_am) addDetailRow(saleSection, t('overview.detail.paidOn'), formatDateDE(listing.bezahlt_am));
   }
 
-  // Versand
+  // Shipping info
   if (listing.verschickt || listing.anschrift) {
     const shipSection = grid.createDiv({ cls: 'ka-detail-section' });
-    addSectionHeader(shipSection, 'Versand', () => callbacks.onShip(listing));
-    if (listing.anschrift) addDetailRow(shipSection, 'Anschrift', listing.anschrift);
-    if (listing.carrier) addDetailRow(shipSection, 'Carrier', listing.carrier);
-    if (listing.porto_name) addDetailRow(shipSection, 'Porto', formatPortoDisplay(listing.carrier, listing.porto_name, listing.porto_price));
-    if (listing.sendungsnummer) addDetailRow(shipSection, 'Sendungsnummer', listing.sendungsnummer);
-    addDetailRow(shipSection, 'Label gedruckt', listing.label_erstellt ? '✓ Ja' : '✗ Nein');
-    if (listing.verschickt_am) addDetailRow(shipSection, 'Verschickt am', formatDateDE(listing.verschickt_am));
+    addSectionHeader(shipSection, t('overview.detail.shipping'), () => callbacks.onShip(listing));
+    if (listing.anschrift) addDetailRow(shipSection, t('overview.detail.address'), listing.anschrift);
+    if (listing.carrier) addDetailRow(shipSection, t('overview.detail.carrier'), listing.carrier);
+    if (listing.porto_name) addDetailRow(shipSection, t('overview.detail.porto'), formatPortoDisplay(listing.carrier, listing.porto_name, listing.porto_price));
+    if (listing.sendungsnummer) addDetailRow(shipSection, t('overview.detail.tracking'), listing.sendungsnummer);
+    addDetailRow(shipSection, t('overview.detail.labelPrinted'), listing.label_erstellt ? t('common.yes') : t('common.no'));
+    if (listing.verschickt_am) addDetailRow(shipSection, t('overview.detail.shippedOn'), formatDateDE(listing.verschickt_am));
   }
 
-  // Finanzen
+  // Finances
   if (listing.verkauft_fuer != null) {
     const finSection = grid.createDiv({ cls: 'ka-detail-section' });
-    finSection.createEl('h4', { text: 'Finanzen' });
+    finSection.createEl('h4', { text: t('overview.detail.finances') });
 
     const revenue = listing.verkauft_fuer;
     const shippingCost = listing.porto_price ?? 0;
     const profit = revenue - shippingCost;
 
-    addDetailRow(finSection, 'Einnahmen', formatCurrency(revenue));
-    if (shippingCost > 0) addDetailRow(finSection, 'Portokosten', `−${formatCurrency(shippingCost)}`);
-    addDetailRow(finSection, 'Gewinn', profit >= 0 ? formatCurrency(profit) : `−${formatCurrency(Math.abs(profit))}`);
+    addDetailRow(finSection, t('overview.detail.revenue'), formatCurrency(revenue));
+    if (shippingCost > 0) addDetailRow(finSection, t('overview.detail.shippingDeducted'), `−${formatCurrency(shippingCost)}`);
+    addDetailRow(finSection, t('overview.detail.profit'), profit >= 0 ? formatCurrency(profit) : `−${formatCurrency(Math.abs(profit))}`);
   }
 
-  // Beschreibung
+  // Description
   if (listing.beschreibung) {
     const descSection = detail.createDiv({ cls: 'ka-detail-section' });
     const descHeader = descSection.createDiv({ cls: 'ka-desc-header' });
-    descHeader.createEl('h4', { text: 'Beschreibung' });
-    createCopyButton(descHeader, 'Kopieren', listing.beschreibung!);
+    descHeader.createEl('h4', { text: t('overview.detail.description') });
+    createCopyButton(descHeader, t('overview.copy.desc'), listing.beschreibung!);
     descSection.createDiv({ cls: 'ka-desc-box', text: listing.beschreibung });
   }
 

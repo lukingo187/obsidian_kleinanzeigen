@@ -111,7 +111,7 @@ ${footerInstruction}`;
       const parsed = JSON.parse(jsonStr);
       return {
         artikel: parsed.artikel ?? '',
-        zustand: parsed.zustand ?? 'Gut',
+        zustand: parsed.zustand ?? 'good',
         carrier: parsed.carrier,
         porto_name: parsed.porto_name,
         porto_price: parsed.porto_price != null ? Number(parsed.porto_price) : undefined,

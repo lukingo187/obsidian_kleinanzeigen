@@ -97,8 +97,8 @@ export class VaultService {
     return {
       artikel: fm.artikel ?? file.basename,
       beschreibung: fm.beschreibung,
-      zustand: fm.zustand ?? 'Gut',
-      status: fm.status ?? 'Aktiv',
+      zustand: fm.zustand ?? 'good',
+      status: fm.status ?? 'active',
       preis: Number(fm.preis) || 0,
       preisart: fm.preisart ?? 'VB',
       verkauft_fuer: fm.verkauft_fuer,

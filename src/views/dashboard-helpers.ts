@@ -1,19 +1,20 @@
 import { setIcon } from 'obsidian';
 import type { Status } from '../models/listing';
+import { t } from '../i18n';
 
 export const STATUS_LUCIDE_ICON: Record<Status, string> = {
-  'Aktiv': 'circle-dot',
-  'Verkauft': 'banknote',
-  'Verschickt': 'truck',
-  'Abgeschlossen': 'circle-check',
-  'Abgelaufen': 'clock',
-  'Archiviert': 'archive',
+  active:    'circle-dot',
+  sold:      'banknote',
+  shipped:   'truck',
+  completed: 'circle-check',
+  expired:   'clock',
+  archived:  'archive',
 };
 
 export function renderStatusBadge(el: HTMLElement, status: Status) {
   const iconSpan = el.createSpan({ cls: 'ka-status-icon' });
   setIcon(iconSpan, STATUS_LUCIDE_ICON[status]);
-  el.createSpan({ text: status });
+  el.createSpan({ text: t(`status.${status}`) });
 }
 
 export function addSettingRow(container: HTMLElement, label: string, render: (el: HTMLElement) => void) {

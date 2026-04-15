@@ -81,10 +81,10 @@ export function calculateStats(listings: Listing[]): Stats {
 
   for (const l of listings) {
     switch (l.status) {
-      case 'Aktiv': activeCount++; break;
-      case 'Verkauft': soldCount++; break;
-      case 'Verschickt': shippedCount++; break;
-      case 'Abgeschlossen': completedCount++; break;
+      case 'active': activeCount++; break;
+      case 'sold': soldCount++; break;
+      case 'shipped': shippedCount++; break;
+      case 'completed': completedCount++; break;
     }
 
     if (l.verkauft) totalSoldCount++;

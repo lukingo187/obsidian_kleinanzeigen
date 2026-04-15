@@ -1,8 +1,8 @@
-export type Preisart = 'VB' | 'Festpreis';
+export type Preisart = 'negotiable' | 'fixed';
 
-export type Zustand = 'Neu mit Etikett' | 'Neu' | 'Sehr Gut' | 'Gut' | 'In Ordnung' | 'Defekt';
+export type Zustand = 'new_with_tag' | 'new' | 'very_good' | 'good' | 'acceptable' | 'defective';
 
-export type Status = 'Aktiv' | 'Verkauft' | 'Verschickt' | 'Abgeschlossen' | 'Abgelaufen' | 'Archiviert';
+export type Status = 'active' | 'sold' | 'shipped' | 'completed' | 'expired' | 'archived';
 
 export interface PortoEntry {
   name: string;
@@ -78,11 +78,11 @@ export interface Listing {
 }
 
 export const ZUSTAND_OPTIONS: Zustand[] = [
-  'Neu mit Etikett', 'Neu', 'Sehr Gut', 'Gut', 'In Ordnung', 'Defekt'
+  'new_with_tag', 'new', 'very_good', 'good', 'acceptable', 'defective',
 ];
 
 export const STATUS_OPTIONS: Status[] = [
-  'Aktiv', 'Verkauft', 'Verschickt', 'Abgeschlossen', 'Abgelaufen', 'Archiviert'
+  'active', 'sold', 'shipped', 'completed', 'expired', 'archived',
 ];
 
 
@@ -150,6 +150,7 @@ export interface AIUsageRecord {
 
 export interface PluginSettings {
   baseFolder: string;
+  language: 'de' | 'en';
   aiProvider: AIProvider;
   aiProviders: Record<AIProvider, AIProviderConfig>;
   aiUsage: Record<AIProvider, AIUsageRecord>;
@@ -188,6 +189,7 @@ export const DEFAULT_USAGE: AIUsageRecord = {
 
 export const DEFAULT_SETTINGS: PluginSettings = {
   baseFolder: 'kleinanzeigen',
+  language: 'de',
   aiProvider: 'google',
   aiProviders: {
     google: { apiKey: '', model: 'gemini-2.0-flash' },

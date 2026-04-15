@@ -1,6 +1,7 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
 import { Listing } from '../models/listing';
 import { todayString } from '../utils/formatting';
+import { t } from '../i18n';
 
 const BEZAHLART_OPTIONS = ['PayPal', 'Überweisung', 'Barzahlung', 'Sonstige'];
 
@@ -26,18 +27,18 @@ export class SoldModal extends Modal {
     const { contentEl } = this;
     contentEl.addClass('ka-modal');
 
-    const title = this.isEdit ? 'Verkauf bearbeiten' : 'Verkauft';
+    const title = this.isEdit ? t('modal.sold.titleEdit') : t('modal.sold.titleNew');
     contentEl.createEl('h2', { text: `${title} — ${this.listing.artikel}` });
 
     new Setting(contentEl)
-      .setName('Verkauft für (€) *')
-      .setDesc(`Eingestellt für ${this.listing.preis}€`)
+      .setName(t('modal.sold.field.price'))
+      .setDesc(t('modal.sold.field.priceDesc', { price: this.listing.preis }))
       .addText(text => text
         .setValue(this.verkauftFuer.toString())
         .onChange(v => this.verkauftFuer = parseFloat(v) || 0));
 
     new Setting(contentEl)
-      .setName('Bezahlart')
+      .setName(t('modal.sold.field.payment'))
       .addDropdown(dd => {
         for (const b of BEZAHLART_OPTIONS) {
           dd.addOption(b, b);
@@ -47,22 +48,22 @@ export class SoldModal extends Modal {
       });
 
     new Setting(contentEl)
-      .setName('Bezahlt')
+      .setName(t('modal.sold.field.paid'))
       .addToggle(toggle => toggle
         .setValue(this.bezahlt)
         .onChange(v => this.bezahlt = v));
 
-    const btnText = this.isEdit ? 'Speichern' : 'Als verkauft markieren';
+    const btnText = this.isEdit ? t('modal.sold.submitEdit') : t('modal.sold.submitNew');
     new Setting(contentEl)
       .addButton(btn => btn
         .setButtonText(btnText)
         .setCta()
         .onClick(() => {
-          if (this.verkauftFuer <= 0) { new Notice('Bitte einen gültigen Verkaufspreis eingeben.'); return; }
+          if (this.verkauftFuer <= 0) { new Notice(t('notice.validation.sellPriceRequired')); return; }
 
           const today = todayString();
           if (!this.isEdit) {
-            this.listing.status = 'Verkauft';
+            this.listing.status = 'sold';
             this.listing.verkauft = true;
             this.listing.verkauft_am = this.listing.verkauft_am ?? today;
           }
@@ -77,7 +78,7 @@ export class SoldModal extends Modal {
           this.close();
         }))
       .addButton(btn => btn
-        .setButtonText('Abbrechen')
+        .setButtonText(t('common.cancel'))
         .onClick(() => this.close()));
   }
 

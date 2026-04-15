@@ -1,6 +1,7 @@
 import { Setting } from 'obsidian';
 import { CARRIERS, CARRIER_OPTIONS, PortoEntry } from '../models/listing';
 import { formatCurrency } from './formatting';
+import { t } from '../i18n';
 
 export interface PortoState {
   carrier: string;
@@ -68,7 +69,7 @@ function renderPortoSubFields(
     const nameInput = row.createEl('input', {
       cls: 'ka-setting-input',
       type: 'text',
-      placeholder: 'Bezeichnung',
+      placeholder: t('porto.namePlaceholder'),
     });
     if (state.portoName) nameInput.value = state.portoName;
     nameInput.addEventListener('input', () => {
@@ -79,7 +80,7 @@ function renderPortoSubFields(
     const priceInput = row.createEl('input', {
       cls: 'ka-setting-input ka-porto-price-input',
       type: 'text',
-      placeholder: 'Preis (€)',
+      placeholder: t('porto.pricePlaceholder'),
     });
     if (state.portoPrice != null) priceInput.value = state.portoPrice.toString();
     priceInput.addEventListener('input', () => {
@@ -97,7 +98,7 @@ function renderPortoSubFields(
 export function renderCarrierPortoUI(opts: PortoUIOptions): { rerender: () => void } {
   const { container, state, onChange } = opts;
 
-  const versandSetting = new Setting(container).setName('Versand');
+  const versandSetting = new Setting(container).setName(t('porto.shipping'));
   const wrapper = versandSetting.controlEl.createDiv({ cls: 'ka-porto-settings-wrapper' });
 
   const carrierSelect = wrapper.createEl('select', { cls: 'dropdown' });
@@ -124,16 +125,16 @@ export function renderCarrierPortoUI(opts: PortoUIOptions): { rerender: () => vo
 
     if (opts.showTracking && opts.trackingState && !isAbholung) {
       const snSetting = new Setting(container)
-        .setName('Sendungsnummer')
+        .setName(t('porto.tracking'))
         .addText(text => text
-          .setPlaceholder('Tracking-Nummer')
+          .setPlaceholder(t('porto.trackingPlaceholder'))
           .setValue(opts.trackingState!.sendungsnummer)
           .onChange(v => opts.trackingState!.onSendungsnummerChange(v)));
       container.insertBefore(snSetting.settingEl, trackingAnchor);
       trackingEls.push(snSetting.settingEl);
 
       const labelSetting = new Setting(container)
-        .setName('Label gedruckt')
+        .setName(t('porto.labelPrinted'))
         .addToggle(toggle => toggle
           .setValue(opts.trackingState!.labelErstellt)
           .onChange(v => opts.trackingState!.onLabelChange(v)));
@@ -169,7 +170,7 @@ export function renderCarrierPortoSettingsUI(
   const wrapper = container.createDiv({ cls: 'ka-porto-settings-wrapper' });
   const carrierSelect = wrapper.createEl('select', { cls: 'dropdown' });
   if (options?.allowEmpty) {
-    carrierSelect.createEl('option', { value: '', text: '— beliebig —' });
+    carrierSelect.createEl('option', { value: '', text: t('porto.anyOption') });
   }
   for (const c of CARRIERS) {
     const opt = carrierSelect.createEl('option', { value: c, text: c });

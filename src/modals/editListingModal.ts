@@ -1,6 +1,7 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
 import { Listing, ZUSTAND_OPTIONS, Zustand, Preisart, DEFAULT_CARRIER } from '../models/listing';
 import { PortoState, renderCarrierPortoUI } from '../utils/portoUI';
+import { t } from '../i18n';
 
 export class EditListingModal extends Modal {
   private listing: Listing;
@@ -32,32 +33,32 @@ export class EditListingModal extends Modal {
     const { contentEl } = this;
     contentEl.addClass('ka-modal');
 
-    contentEl.createEl('h2', { text: 'Inserat bearbeiten' });
+    contentEl.createEl('h2', { text: t('modal.edit.title') });
 
     new Setting(contentEl)
-      .setName('Artikel')
+      .setName(t('modal.edit.field.name'))
       .addText(text => text
         .setValue(this.artikel)
         .onChange(v => this.artikel = v));
 
     new Setting(contentEl)
-      .setName('Zustand')
+      .setName(t('modal.edit.field.condition'))
       .addDropdown(dd => {
         for (const z of ZUSTAND_OPTIONS) {
-          dd.addOption(z, z);
+          dd.addOption(z, t(`zustand.${z}` as any));
         }
         dd.setValue(this.zustand);
         dd.onChange(v => this.zustand = v as Zustand);
       });
 
     new Setting(contentEl)
-      .setName('Preis (€)')
+      .setName(t('modal.edit.field.price'))
       .addText(text => text
         .setValue(this.preis.toString())
         .onChange(v => this.preis = parseFloat(v) || 0))
       .addDropdown(dd => {
-        dd.addOption('VB', 'VB');
-        dd.addOption('Festpreis', 'Festpreis');
+        dd.addOption('negotiable', t('preisart.negotiable'));
+        dd.addOption('fixed', t('preisart.fixed'));
         dd.setValue(this.preisart);
         dd.onChange(v => this.preisart = v as Preisart);
       });
@@ -68,7 +69,7 @@ export class EditListingModal extends Modal {
     });
 
     new Setting(contentEl)
-      .setName('Beschreibung')
+      .setName(t('modal.edit.field.description'))
       .addTextArea(ta => {
         ta.setValue(this.beschreibung);
         ta.onChange(v => this.beschreibung = v);
@@ -78,10 +79,10 @@ export class EditListingModal extends Modal {
 
     new Setting(contentEl)
       .addButton(btn => btn
-        .setButtonText('Speichern')
+        .setButtonText(t('common.save'))
         .setCta()
         .onClick(() => {
-          if (!this.artikel.trim()) { new Notice('Bitte einen Artikelnamen eingeben.'); return; }
+          if (!this.artikel.trim()) { new Notice(t('notice.validation.nameRequired')); return; }
 
           this.listing.artikel = this.artikel.trim();
           this.listing.zustand = this.zustand;
@@ -96,7 +97,7 @@ export class EditListingModal extends Modal {
           this.close();
         }))
       .addButton(btn => btn
-        .setButtonText('Abbrechen')
+        .setButtonText(t('common.cancel'))
         .onClick(() => this.close()));
   }
 
