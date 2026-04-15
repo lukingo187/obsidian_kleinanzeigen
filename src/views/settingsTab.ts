@@ -1,4 +1,4 @@
-import { App, FuzzySuggestModal, Notice, PluginSettingTab, Setting, TFolder, setIcon } from 'obsidian';
+import { App, FuzzySuggestModal, Modal, Notice, PluginSettingTab, Setting, TFolder, setIcon } from 'obsidian';
 import { AIProvider, DEFAULT_MODELS, DEFAULT_USAGE, ZUSTAND_OPTIONS, Zustand, Preisart, ArticleTemplate, DESCRIPTION_STYLES, DescriptionStyle } from '../models/listing';
 import { addUsageCard } from './dashboard-helpers';
 import { renderCarrierPortoSettingsUI } from '../utils/portoUI';
@@ -36,9 +36,122 @@ class FolderSuggestModal extends FuzzySuggestModal<TFolder> {
   onChooseItem(folder: TFolder): void { this.onChooseCallback(folder); }
 }
 
+class TemplateFormModal extends Modal {
+  private tpl: ArticleTemplate;
+
+  constructor(
+    app: App,
+    initialTpl: ArticleTemplate,
+    private onSave: (tpl: ArticleTemplate) => Promise<void>,
+  ) {
+    super(app);
+    this.tpl = { ...initialTpl };
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.addClass('ka-modal');
+    const isNew = this.tpl.id === '';
+
+    contentEl.createEl('h2', {
+      text: isNew ? t('settings.templates.createTitle') : t('settings.templates.editTitle'),
+    });
+
+    new Setting(contentEl)
+      .setName(t('settings.templates.field.name'))
+      .addText(text => {
+        text.setPlaceholder('z.B. PS4 Spiel');
+        text.setValue(this.tpl.name);
+        text.onChange(v => { this.tpl.name = v; });
+      });
+
+    new Setting(contentEl)
+      .setName(t('settings.templates.field.item'))
+      .addText(text => {
+        text.setPlaceholder(t('settings.templates.field.itemPlaceholder'));
+        text.setValue(this.tpl.artikel ?? '');
+        text.onChange(v => { this.tpl.artikel = v || undefined; });
+      });
+
+    new Setting(contentEl)
+      .setName(t('settings.templates.field.price'))
+      .addText(text => {
+        text.setPlaceholder('0.00');
+        text.setValue(this.tpl.preis?.toString() ?? '');
+        text.onChange(v => {
+          const val = parseFloat(v);
+          this.tpl.preis = !isNaN(val) && val > 0 ? val : undefined;
+        });
+        text.inputEl.type = 'number';
+      });
+
+    new Setting(contentEl)
+      .setName(t('settings.templates.field.condition'))
+      .addDropdown(dd => {
+        dd.addOption('', t('common.any'));
+        for (const z of ZUSTAND_OPTIONS) {
+          dd.addOption(z, t(`zustand.${z}` as any));
+        }
+        dd.setValue(this.tpl.zustand ?? '');
+        dd.onChange(v => { this.tpl.zustand = v ? v as Zustand : undefined; });
+      });
+
+    new Setting(contentEl)
+      .setName(t('settings.templates.field.preisart'))
+      .addDropdown(dd => {
+        dd.addOption('', t('common.any'));
+        dd.addOption('negotiable', t('preisart.negotiable'));
+        dd.addOption('fixed', t('preisart.fixed'));
+        dd.setValue(this.tpl.preisart ?? '');
+        dd.onChange(v => { this.tpl.preisart = v ? v as Preisart : undefined; });
+      });
+
+    const portoSetting = new Setting(contentEl).setName(t('settings.templates.field.shipping'));
+    const portoContainer = portoSetting.controlEl.createDiv();
+    renderCarrierPortoSettingsUI(
+      portoContainer,
+      { carrier: this.tpl.carrier ?? '', portoName: this.tpl.porto_name, portoPrice: this.tpl.porto_price },
+      (state) => {
+        this.tpl.carrier = state.carrier || undefined;
+        this.tpl.porto_name = state.portoName;
+        this.tpl.porto_price = state.portoPrice;
+      },
+      { allowEmpty: true },
+    );
+
+    new Setting(contentEl)
+      .setName(t('settings.templates.field.description'))
+      .addTextArea(ta => {
+        ta.setPlaceholder(t('settings.templates.field.descPlaceholder'));
+        ta.setValue(this.tpl.beschreibungsvorlage ?? '');
+        ta.onChange(v => { this.tpl.beschreibungsvorlage = v || undefined; });
+        ta.inputEl.rows = 4;
+      });
+
+    new Setting(contentEl)
+      .addButton(btn => btn
+        .setButtonText(t('common.save'))
+        .setCta()
+        .onClick(async () => {
+          if (!this.tpl.name.trim()) {
+            new Notice(t('settings.templates.nameRequired'));
+            return;
+          }
+          await this.onSave({ ...this.tpl, name: this.tpl.name.trim() });
+          this.close();
+        }))
+      .addButton(btn => btn
+        .setButtonText(t('common.cancel'))
+        .onClick(() => this.close()));
+  }
+
+  onClose() {
+    this.contentEl.empty();
+  }
+}
+
 export class SettingsTab extends PluginSettingTab {
   plugin: KleinanzeigenPlugin;
-  private editingTemplate: ArticleTemplate | null = null;
 
   constructor(app: App, plugin: KleinanzeigenPlugin) {
     super(app, plugin);
@@ -319,19 +432,20 @@ export class SettingsTab extends PluginSettingTab {
     }
 
     if (totalCalls > 0) {
-      new Setting(containerEl)
-        .addButton(btn => btn
-          .setButtonText(t('settings.usage.reset'))
-          .setWarning()
-          .onClick(async () => {
-            settings.aiUsage = {
-              google: { ...DEFAULT_USAGE },
-              anthropic: { ...DEFAULT_USAGE },
-              openai: { ...DEFAULT_USAGE },
-            };
-            await this.plugin.saveSettings();
-            this.display();
-          }));
+      const resetRow = containerEl.createDiv({ cls: 'ka-settings-btn-row' });
+      const resetBtn = resetRow.createEl('button', {
+        text: t('settings.usage.reset'),
+        cls: 'ka-settings-btn-danger',
+      });
+      resetBtn.addEventListener('click', async () => {
+        settings.aiUsage = {
+          google: { ...DEFAULT_USAGE },
+          anthropic: { ...DEFAULT_USAGE },
+          openai: { ...DEFAULT_USAGE },
+        };
+        await this.plugin.saveSettings();
+        this.display();
+      });
     }
   }
 
@@ -359,11 +473,8 @@ export class SettingsTab extends PluginSettingTab {
         .setDesc(meta.join(' · '))
         .addExtraButton(btn => {
           btn.setIcon('pencil');
-          btn.setTooltip(t('common.save'));
-          btn.onClick(() => {
-            this.editingTemplate = { ...tpl };
-            this.display();
-          });
+          btn.setTooltip(t('common.edit'));
+          btn.onClick(() => this.openTemplateModal(tpl));
         })
         .addExtraButton(btn => {
           btn.setIcon('trash-2');
@@ -378,132 +489,36 @@ export class SettingsTab extends PluginSettingTab {
         });
     }
 
-    if (this.editingTemplate !== null) {
-      this.renderTemplateForm(containerEl);
-    } else {
-      new Setting(containerEl)
-        .addButton(btn => btn
-          .setButtonText(t('settings.templates.new'))
-          .onClick(() => {
-            this.editingTemplate = { id: '', name: '' };
-            this.display();
-          }));
-    }
+    const newRow = containerEl.createDiv({ cls: 'ka-settings-btn-row' });
+    newRow.createEl('button', {
+      text: t('settings.templates.new'),
+      cls: 'ka-settings-btn',
+    }).addEventListener('click', () => this.openTemplateModal({ id: '', name: '' }));
   }
 
-  private renderTemplateForm(containerEl: HTMLElement): void {
+  private openTemplateModal(initialTpl: ArticleTemplate) {
     const settings = this.plugin.settings;
-    const tpl = this.editingTemplate!;
-    const isNew = tpl.id === '';
+    const isNew = initialTpl.id === '';
 
-    const formContainer = containerEl.createDiv({ cls: 'ka-template-form' });
-    formContainer.createEl('h4', { text: isNew ? t('settings.templates.createTitle') : t('settings.templates.editTitle') });
-
-    new Setting(formContainer)
-      .setName(t('settings.templates.field.name'))
-      .addText(text => {
-        text.setPlaceholder('z.B. PS4 Spiel');
-        text.setValue(tpl.name);
-        text.onChange(value => { tpl.name = value; });
-      });
-
-    new Setting(formContainer)
-      .setName(t('settings.templates.field.item'))
-      .addText(text => {
-        text.setPlaceholder(t('settings.templates.field.itemPlaceholder'));
-        text.setValue(tpl.artikel ?? '');
-        text.onChange(value => { tpl.artikel = value || undefined; });
-      });
-
-    new Setting(formContainer)
-      .setName(t('settings.templates.field.price'))
-      .addText(text => {
-        text.setPlaceholder('0.00');
-        text.setValue(tpl.preis?.toString() ?? '');
-        text.onChange(value => {
-          const val = parseFloat(value);
-          tpl.preis = !isNaN(val) && val > 0 ? val : undefined;
+    new TemplateFormModal(this.app, initialTpl, async (saved) => {
+      if (isNew) {
+        settings.templates = TemplateService.create(settings.templates, {
+          name: saved.name,
+          artikel: saved.artikel,
+          preis: saved.preis,
+          zustand: saved.zustand,
+          preisart: saved.preisart,
+          carrier: saved.carrier,
+          porto_name: saved.porto_name,
+          porto_price: saved.porto_price,
+          beschreibungsvorlage: saved.beschreibungsvorlage,
         });
-        text.inputEl.type = 'number';
-      });
-
-    new Setting(formContainer)
-      .setName(t('settings.templates.field.condition'))
-      .addDropdown(dd => {
-        dd.addOption('', t('common.any'));
-        for (const z of ZUSTAND_OPTIONS) {
-          dd.addOption(z, t(`zustand.${z}` as any));
-        }
-        dd.setValue(tpl.zustand ?? '');
-        dd.onChange(value => { tpl.zustand = value ? value as Zustand : undefined; });
-      });
-
-    new Setting(formContainer)
-      .setName(t('settings.templates.field.preisart'))
-      .addDropdown(dd => {
-        dd.addOption('', t('common.any'));
-        dd.addOption('negotiable', t('preisart.negotiable'));
-        dd.addOption('fixed', t('preisart.fixed'));
-        dd.setValue(tpl.preisart ?? '');
-        dd.onChange(value => { tpl.preisart = value ? value as Preisart : undefined; });
-      });
-
-    const portoSetting = new Setting(formContainer).setName(t('settings.templates.field.shipping'));
-    const portoContainer = portoSetting.controlEl.createDiv();
-    renderCarrierPortoSettingsUI(
-      portoContainer,
-      { carrier: tpl.carrier ?? '', portoName: tpl.porto_name, portoPrice: tpl.porto_price },
-      (state) => {
-        tpl.carrier = state.carrier || undefined;
-        tpl.porto_name = state.portoName;
-        tpl.porto_price = state.portoPrice;
-      },
-      { allowEmpty: true },
-    );
-
-    new Setting(formContainer)
-      .setName(t('settings.templates.field.description'))
-      .addTextArea(ta => {
-        ta.setPlaceholder(t('settings.templates.field.descPlaceholder'));
-        ta.setValue(tpl.beschreibungsvorlage ?? '');
-        ta.onChange(value => { tpl.beschreibungsvorlage = value || undefined; });
-        ta.inputEl.rows = 3;
-      });
-
-    new Setting(formContainer)
-      .addButton(btn => btn
-        .setButtonText(t('common.save'))
-        .setCta()
-        .onClick(async () => {
-          if (!tpl.name.trim()) {
-            new Notice(t('settings.templates.nameRequired'));
-            return;
-          }
-          if (isNew) {
-            settings.templates = TemplateService.create(settings.templates, {
-              name: tpl.name.trim(),
-              artikel: tpl.artikel,
-              preis: tpl.preis,
-              zustand: tpl.zustand,
-              preisart: tpl.preisart,
-              carrier: tpl.carrier,
-              porto_name: tpl.porto_name,
-              porto_price: tpl.porto_price,
-              beschreibungsvorlage: tpl.beschreibungsvorlage,
-            });
-          } else {
-            settings.templates = TemplateService.update(settings.templates, { ...tpl, name: tpl.name.trim() });
-          }
-          await this.plugin.saveSettings();
-          this.editingTemplate = null;
-          this.display();
-        }))
-      .addButton(btn => btn
-        .setButtonText(t('common.cancel'))
-        .onClick(() => {
-          this.editingTemplate = null;
-          this.display();
-        }));
+      } else {
+        settings.templates = TemplateService.update(settings.templates, saved);
+      }
+      await this.plugin.saveSettings();
+      this.display();
+    }).open();
   }
 
   // ── Platforms ─────────────────────────────────────────────

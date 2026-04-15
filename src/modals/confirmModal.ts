@@ -1,4 +1,5 @@
 import { App, Modal, Setting } from 'obsidian';
+import { t } from '../i18n';
 
 export class ConfirmModal extends Modal {
   private message: string;
@@ -14,19 +15,19 @@ export class ConfirmModal extends Modal {
     const { contentEl } = this;
     contentEl.addClass('ka-modal');
 
-    contentEl.createEl('h2', { text: 'Bestätigung' });
+    contentEl.createEl('h2', { text: t('modal.confirm.title') });
     contentEl.createEl('p', { text: this.message });
 
     new Setting(contentEl)
       .addButton(btn => btn
-        .setButtonText('Löschen')
+        .setButtonText(t('common.delete'))
         .setWarning()
         .onClick(() => {
           this.onConfirm();
           this.close();
         }))
       .addButton(btn => btn
-        .setButtonText('Abbrechen')
+        .setButtonText(t('common.cancel'))
         .onClick(() => this.close()));
   }
 

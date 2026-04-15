@@ -17,12 +17,6 @@ export function renderStatusBadge(el: HTMLElement, status: Status) {
   el.createSpan({ text: t(`status.${status}`) });
 }
 
-export function addSettingRow(container: HTMLElement, label: string, render: (el: HTMLElement) => void) {
-  const row = container.createDiv({ cls: 'ka-setting-item' });
-  row.createEl('label', { text: label });
-  render(row);
-}
-
 export function addUsageCard(container: HTMLElement, value: string, label: string) {
   const card = container.createDiv({ cls: 'ka-usage-card' });
   card.createDiv({ cls: 'ka-usage-value', text: value });
@@ -32,7 +26,7 @@ export function addUsageCard(container: HTMLElement, value: string, label: strin
 export function addSectionHeader(container: HTMLElement, title: string, onEdit: () => void) {
   const header = container.createDiv({ cls: 'ka-section-header' });
   header.createEl('h4', { text: title });
-  const editBtn = header.createEl('button', { cls: 'ka-section-edit-btn', attr: { 'aria-label': 'Bearbeiten' } });
+  const editBtn = header.createEl('button', { cls: 'ka-section-edit-btn', attr: { 'aria-label': t('common.edit') } });
   setIcon(editBtn, 'pencil');
   editBtn.addEventListener('click', () => onEdit());
 }
@@ -48,7 +42,7 @@ export function createCopyButton(container: HTMLElement, text: string, value: st
   btn.addEventListener('click', async () => {
     await navigator.clipboard.writeText(value);
     const original = btn.textContent!;
-    btn.textContent = '✓ Kopiert!';
+    btn.textContent = t('common.copied');
     setTimeout(() => { btn.textContent = original; }, 2000);
   });
   return btn;

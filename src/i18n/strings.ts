@@ -21,6 +21,7 @@ export const de = {
 
   // ── Common ───────────────────────────────────────────────
   'common.save':     'Speichern',
+  'common.edit':     'Bearbeiten',
   'common.cancel':   'Abbrechen',
   'common.delete':   'Löschen',
   'common.close':    'Schließen',
@@ -293,6 +294,7 @@ export const en: Record<keyof typeof de, string> = {
 
   // ── Common ───────────────────────────────────────────────
   'common.save':    'Save',
+  'common.edit':    'Edit',
   'common.cancel':  'Cancel',
   'common.delete':  'Delete',
   'common.close':   'Close',
