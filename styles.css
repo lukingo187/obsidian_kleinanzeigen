@@ -878,26 +878,46 @@
   padding: 8px 0;
 }
 
-.ka-settings-section {
-  margin-bottom: 20px;
-  background: var(--background-secondary);
-  border-radius: 12px;
-  padding: 20px 24px;
-  border: 1px solid var(--background-modifier-border);
+/* Section separator header: [icon] LABEL ──────── */
+.ka-settings-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 24px 0 8px;
+  font-size: 0.75em;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
-.ka-settings-section h3 {
-  margin: 0 0 4px 0;
-  font-size: 1.05em;
-  color: var(--text-normal);
-  font-weight: 600;
+.ka-settings-section-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--background-modifier-border);
+  margin-left: 4px;
 }
 
+.ka-section-icon {
+  display: flex;
+  align-items: center;
+  color: var(--interactive-accent);
+  opacity: 0.8;
+}
+
+.ka-section-icon svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Section description paragraph below section header */
 .ka-settings-section-desc {
   font-size: 0.85em;
   color: var(--text-muted);
-  margin-bottom: 16px;
-  line-height: 1.4;
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+  padding: 0 2px;
 }
 
 .ka-setting-item {
@@ -1070,6 +1090,28 @@
 
 .ka-test-fail {
   color: var(--ka-color-error);
+}
+
+/* API key warning + test row */
+.ka-api-key-meta {
+  padding: 6px 0 4px 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ka-api-key-warning {
+  font-size: 0.8em;
+  color: var(--text-muted);
+  padding: 7px 10px;
+  border-left: 2px solid var(--background-modifier-border);
+  line-height: 1.45;
+}
+
+.ka-api-test-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 /* AI freeform section in modal */
@@ -1291,7 +1333,7 @@
 
 
 /* Reset btn */
-.ka-settings-section .ka-reset-btn {
+.ka-reset-btn {
   margin-top: 12px;
   border-color: var(--ka-color-error);
   color: var(--ka-color-error);
@@ -1364,6 +1406,6 @@
   max-width: 100px;
 }
 
-.ka-settings-section .ka-reset-btn:hover {
+.ka-reset-btn:hover {
   background: color-mix(in srgb, var(--ka-color-error) 10%, transparent);
 }

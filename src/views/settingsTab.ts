@@ -48,23 +48,31 @@ export class SettingsTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
+    containerEl.addClass('ka-settings');
 
     this.renderLanguageSection(containerEl);
     this.renderGeneralSection(containerEl);
     this.renderAISection(containerEl);
-    this.renderDescriptionStyleSection(containerEl);
+    this.renderDescriptionSection(containerEl);
     this.renderAIUsageSection(containerEl);
-    this.renderDescriptionFooterSection(containerEl);
     this.renderTemplatesSection(containerEl);
     this.renderPlatformsSection(containerEl);
+  }
+
+  // ── Section header helper ────────────────────────────────
+
+  private sectionHeader(container: HTMLElement, icon: string, title: string) {
+    const header = container.createDiv({ cls: 'ka-settings-section-header' });
+    const iconEl = header.createSpan({ cls: 'ka-section-icon' });
+    setIcon(iconEl, icon);
+    header.createSpan({ text: title });
   }
 
   // ── Language ──────────────────────────────────────────────
 
   private renderLanguageSection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
-
-    containerEl.createEl('h3', { text: t('settings.section.language') });
+    this.sectionHeader(containerEl, 'languages', t('settings.section.language'));
 
     new Setting(containerEl)
       .setName(t('settings.language.label'))
@@ -78,6 +86,7 @@ export class SettingsTab extends PluginSettingTab {
           setLang(value as Lang);
           await this.plugin.saveSettings();
           this.display();
+          this.plugin.refreshDashboard();
         });
       });
   }
@@ -86,8 +95,7 @@ export class SettingsTab extends PluginSettingTab {
 
   private renderGeneralSection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
-
-    containerEl.createEl('h3', { text: t('settings.section.general') });
+    this.sectionHeader(containerEl, 'settings', t('settings.section.general'));
 
     new Setting(containerEl)
       .setName(t('settings.general.folder'))
@@ -118,8 +126,7 @@ export class SettingsTab extends PluginSettingTab {
 
   private renderAISection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
-
-    containerEl.createEl('h3', { text: t('settings.section.ai') });
+    this.sectionHeader(containerEl, 'bot', t('settings.section.ai'));
 
     const providerLabels: Record<AIProvider, string> = {
       google: 'Google (Gemini)',
@@ -155,18 +162,17 @@ export class SettingsTab extends PluginSettingTab {
         });
       });
 
-    // API Key help link
     const apiKeyLinks: Record<AIProvider, { url: string; text: string }> = {
-      google: { url: 'https://aistudio.google.com/app/apikey', text: 'Kostenlosen API-Key bei Google AI Studio erstellen' },
-      anthropic: { url: 'https://console.anthropic.com/settings/keys', text: 'API-Key in der Anthropic Console erstellen' },
-      openai: { url: 'https://platform.openai.com/api-keys', text: 'API-Key bei OpenAI erstellen' },
+      google: { url: 'https://aistudio.google.com/app/apikey', text: 'Google AI Studio' },
+      anthropic: { url: 'https://console.anthropic.com/settings/keys', text: 'Anthropic Console' },
+      openai: { url: 'https://platform.openai.com/api-keys', text: 'OpenAI Platform' },
     };
     const link = apiKeyLinks[settings.aiProvider];
 
-    // API Key with visibility toggle
     const apiKeySetting = new Setting(containerEl)
       .setName(t('settings.ai.key'))
       .setDesc(createFragment(f => {
+        f.appendText('→ ');
         const a = f.createEl('a', { text: link.text, href: link.url });
         a.setAttr('target', '_blank');
       }));
@@ -194,40 +200,37 @@ export class SettingsTab extends PluginSettingTab {
       setIcon(toggleVis, isPassword ? 'eye-off' : 'eye');
     });
 
-    // API Key sync warning
-    const warningEl = containerEl.createDiv({ cls: 'setting-item-description ka-api-key-warning' });
-    warningEl.createSpan({ text: t('settings.ai.keyWarning') });
+    // Warning + test on one row
+    const keyMeta = containerEl.createDiv({ cls: 'ka-api-key-meta' });
+    keyMeta.createDiv({ cls: 'ka-api-key-warning', text: t('settings.ai.keyWarning') });
 
-    // Test button
-    const testSetting = new Setting(containerEl);
-    let testResult: HTMLSpanElement;
-    testSetting.addButton(btn => {
-      btn.setButtonText(t('settings.ai.test'));
-      btn.onClick(async () => {
-        const config = settings.aiProviders[settings.aiProvider];
-        if (!config.apiKey) {
-          testResult.setText(t('settings.ai.noKey'));
-          testResult.className = 'ka-test-result ka-test-fail';
-          return;
-        }
-        btn.setButtonText(t('settings.ai.testing'));
-        btn.setDisabled(true);
-        testResult.setText('');
-        try {
-          const aiService = new AIService(settings);
-          const result = await aiService.testApiKey(settings.aiProvider, config.apiKey, config.model);
-          testResult.setText(result.ok ? t('settings.ai.testOk') : (result.error ?? t('settings.ai.testFail')));
-          testResult.className = `ka-test-result ${result.ok ? 'ka-test-ok' : 'ka-test-fail'}`;
-        } catch (e) {
-          testResult.setText(e instanceof Error ? e.message : t('settings.ai.testFail'));
-          testResult.className = 'ka-test-result ka-test-fail';
-        } finally {
-          btn.setButtonText(t('settings.ai.test'));
-          btn.setDisabled(false);
-        }
-      });
+    const testRow = keyMeta.createDiv({ cls: 'ka-api-test-row' });
+    const testBtn = testRow.createEl('button', { text: t('settings.ai.test'), cls: 'ka-test-btn' });
+    const testResult = testRow.createSpan({ cls: 'ka-test-result' });
+
+    testBtn.addEventListener('click', async () => {
+      const config = settings.aiProviders[settings.aiProvider];
+      if (!config.apiKey) {
+        testResult.setText(t('settings.ai.noKey'));
+        testResult.className = 'ka-test-result ka-test-fail';
+        return;
+      }
+      testBtn.textContent = t('settings.ai.testing');
+      testBtn.disabled = true;
+      testResult.setText('');
+      try {
+        const aiService = new AIService(settings);
+        const result = await aiService.testApiKey(settings.aiProvider, config.apiKey, config.model);
+        testResult.setText(result.ok ? t('settings.ai.testOk') : (result.error ?? t('settings.ai.testFail')));
+        testResult.className = `ka-test-result ${result.ok ? 'ka-test-ok' : 'ka-test-fail'}`;
+      } catch (e) {
+        testResult.setText(e instanceof Error ? e.message : t('settings.ai.testFail'));
+        testResult.className = 'ka-test-result ka-test-fail';
+      } finally {
+        testBtn.textContent = t('settings.ai.test');
+        testBtn.disabled = false;
+      }
     });
-    testResult = testSetting.controlEl.createSpan({ cls: 'ka-test-result' });
   }
 
   private getApiKeyPlaceholder(): string {
@@ -239,12 +242,11 @@ export class SettingsTab extends PluginSettingTab {
     return placeholders[this.plugin.settings.aiProvider];
   }
 
-  // ── Description Style ────────────────────────────────────
+  // ── Description (style + footer combined) ────────────────
 
-  private renderDescriptionStyleSection(containerEl: HTMLElement): void {
+  private renderDescriptionSection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
-
-    containerEl.createEl('h3', { text: t('settings.section.style') });
+    this.sectionHeader(containerEl, 'text', t('settings.section.style'));
 
     new Setting(containerEl)
       .setName(t('settings.style.label'))
@@ -275,14 +277,26 @@ export class SettingsTab extends PluginSettingTab {
           ta.inputEl.rows = 3;
         });
     }
+
+    new Setting(containerEl)
+      .setName(t('settings.footer.label'))
+      .setDesc(t('settings.footer.desc'))
+      .addTextArea(ta => {
+        ta.setPlaceholder(t('settings.footer.placeholder'));
+        ta.setValue(settings.descriptionFooter);
+        ta.onChange(async (value) => {
+          settings.descriptionFooter = value;
+          await this.plugin.saveSettings();
+        });
+        ta.inputEl.rows = 3;
+      });
   }
 
   // ── AI Usage ─────────────────────────────────────────────
 
   private renderAIUsageSection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
-
-    containerEl.createEl('h3', { text: t('settings.section.usage') });
+    this.sectionHeader(containerEl, 'activity', t('settings.section.usage'));
 
     const googleUsage = settings.aiUsage.google;
     const anthropicUsage = settings.aiUsage.anthropic;
@@ -308,6 +322,7 @@ export class SettingsTab extends PluginSettingTab {
       new Setting(containerEl)
         .addButton(btn => btn
           .setButtonText(t('settings.usage.reset'))
+          .setWarning()
           .onClick(async () => {
             settings.aiUsage = {
               google: { ...DEFAULT_USAGE },
@@ -320,39 +335,17 @@ export class SettingsTab extends PluginSettingTab {
     }
   }
 
-  // ── Description Footer ───────────────────────────────────
-
-  private renderDescriptionFooterSection(containerEl: HTMLElement): void {
-    const settings = this.plugin.settings;
-
-    containerEl.createEl('h3', { text: t('settings.section.footer') });
-
-    new Setting(containerEl)
-      .setName(t('settings.footer.label'))
-      .setDesc(t('settings.footer.desc'))
-      .addTextArea(ta => {
-        ta.setPlaceholder(t('settings.footer.placeholder'));
-        ta.setValue(settings.descriptionFooter);
-        ta.onChange(async (value) => {
-          settings.descriptionFooter = value;
-          await this.plugin.saveSettings();
-        });
-        ta.inputEl.rows = 3;
-      });
-  }
-
   // ── Templates ────────────────────────────────────────────
 
   private renderTemplatesSection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
+    this.sectionHeader(containerEl, 'layout-template', t('settings.section.templates'));
 
-    containerEl.createEl('h3', { text: t('settings.section.templates') });
     containerEl.createEl('p', {
       text: t('settings.templates.desc'),
-      cls: 'setting-item-description',
+      cls: 'ka-settings-section-desc',
     });
 
-    // Template list
     for (const tpl of settings.templates) {
       const meta: string[] = [];
       if (tpl.artikel) meta.push(tpl.artikel);
@@ -385,7 +378,6 @@ export class SettingsTab extends PluginSettingTab {
         });
     }
 
-    // Template form (editing or creating)
     if (this.editingTemplate !== null) {
       this.renderTemplateForm(containerEl);
     } else {
@@ -456,7 +448,6 @@ export class SettingsTab extends PluginSettingTab {
         dd.onChange(value => { tpl.preisart = value ? value as Preisart : undefined; });
       });
 
-    // Carrier/Porto
     const portoSetting = new Setting(formContainer).setName(t('settings.templates.field.shipping'));
     const portoContainer = portoSetting.controlEl.createDiv();
     renderCarrierPortoSettingsUI(
@@ -479,7 +470,6 @@ export class SettingsTab extends PluginSettingTab {
         ta.inputEl.rows = 3;
       });
 
-    // Save / Cancel
     new Setting(formContainer)
       .addButton(btn => btn
         .setButtonText(t('common.save'))
@@ -519,7 +509,7 @@ export class SettingsTab extends PluginSettingTab {
   // ── Platforms ─────────────────────────────────────────────
 
   private renderPlatformsSection(containerEl: HTMLElement): void {
-    containerEl.createEl('h3', { text: t('settings.section.platforms') });
+    this.sectionHeader(containerEl, 'store', t('settings.section.platforms'));
 
     new Setting(containerEl)
       .setName(t('settings.platforms.ebay'))

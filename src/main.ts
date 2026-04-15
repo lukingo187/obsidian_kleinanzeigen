@@ -129,7 +129,7 @@ export default class KleinanzeigenPlugin extends Plugin {
     }).open();
   }
 
-  private refreshDashboard() {
+  refreshDashboard() {
     // Wait for Obsidian's metadata cache to process the file write, then refresh.
     // Falls back to 500ms timeout in case the event doesn't fire.
     let triggered = false;
