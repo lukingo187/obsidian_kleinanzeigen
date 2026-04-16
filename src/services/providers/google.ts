@@ -21,8 +21,13 @@ export class GoogleAdapter implements AIProviderAdapter {
       throw new Error(`Google Gemini API: ${errMsg}`);
     }
 
+    const text = response.json?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (typeof text !== 'string') {
+      throw new Error(`Google Gemini API: unexpected response shape (content blocked or empty)`);
+    }
+
     return {
-      text: response.json.candidates[0].content.parts[0].text,
+      text,
       inputTokens: response.json.usageMetadata?.promptTokenCount ?? 0,
       outputTokens: response.json.usageMetadata?.candidatesTokenCount ?? 0,
     };

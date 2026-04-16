@@ -1,7 +1,6 @@
 import { App, Notice, setIcon } from 'obsidian';
 import type { Listing, Status } from '../models/listing';
 import { t } from '../i18n';
-import { VaultService } from '../services/vaultService';
 import { calculateStats } from '../services/statsService';
 import { ExportService } from '../services/exportService';
 import { formatCurrency, formatDateDE, formatPortoDisplay } from '../utils/formatting';
@@ -51,6 +50,10 @@ function sortListings(listings: Listing[], state: OverviewState): Listing[] {
       case 'status':
         cmp = a.status.localeCompare(b.status, 'de');
         break;
+      default: {
+        const _exhaustive: never = state.sortColumn;
+        void _exhaustive;
+      }
     }
     return cmp * dir;
   });
@@ -135,7 +138,6 @@ function renderBulkBar(
   listings: Listing[],
   state: OverviewState,
   actions: DashboardActions,
-  vaultService: VaultService,
   dropdownState: DropdownState,
   renderTableOnly: () => void,
 ) {
@@ -155,7 +157,7 @@ function renderBulkBar(
     btn.addEventListener('click', async () => {
       let failed = 0;
       for (const l of selected) {
-        try { await vaultService.updateListing({ ...l, status: 'archived' }); }
+        try { await actions.updateListing({ ...l, status: 'archived' }); }
         catch { failed++; }
       }
       state.selectedPaths.clear();
@@ -169,7 +171,7 @@ function renderBulkBar(
     btn.addEventListener('click', async () => {
       let failed = 0;
       for (const l of selected) {
-        try { await vaultService.updateListing({ ...l, status: 'expired' }); }
+        try { await actions.updateListing({ ...l, status: 'expired' }); }
         catch { failed++; }
       }
       state.selectedPaths.clear();
@@ -184,7 +186,7 @@ function renderBulkBar(
       new ConfirmModal(app, t('overview.confirm.delete', { name: `${selected.length} items` }), async () => {
         let failed = 0;
         for (const l of selected) {
-          try { await vaultService.deleteListing(l); }
+          try { await actions.deleteListing(l); }
           catch { failed++; }
         }
         state.selectedPaths.clear();
@@ -250,7 +252,6 @@ function renderTable(
   state: OverviewState,
   callbacks: DashboardCallbacks,
   actions: DashboardActions,
-  vaultService: VaultService,
   renderTableOnly: () => void,
 ) {
   const filtered = getFilteredListings(listings, state);
@@ -335,7 +336,7 @@ function renderTable(
     renderStatusBadge(badge, listing.status);
 
     const actionsCell = row.createEl('td', { cls: 'ka-actions' });
-    renderActions(actionsCell, app, listing, callbacks, actions, vaultService, state);
+    renderActions(actionsCell, app, listing, callbacks, actions, state);
 
     row.addEventListener('click', (e) => {
       if (['BUTTON', 'INPUT'].includes((e.target as HTMLElement).tagName)) return;
@@ -351,7 +352,6 @@ function renderActions(
   listing: Listing,
   callbacks: DashboardCallbacks,
   actions: DashboardActions,
-  vaultService: VaultService,
   state: OverviewState,
   context: 'table' | 'detail' = 'table',
 ) {
@@ -381,11 +381,15 @@ function renderActions(
     delBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       new ConfirmModal(app, t('overview.confirm.delete', { name: listing.artikel }), async () => {
-        await vaultService.deleteListing(listing);
-        if (state.expandedListing?.filePath === listing.filePath) {
-          state.expandedListing = null;
+        try {
+          await actions.deleteListing(listing);
+          if (state.expandedListing?.filePath === listing.filePath) {
+            state.expandedListing = null;
+          }
+          actions.refreshAfterWrite();
+        } catch (e) {
+          new Notice(t('notice.saveError', { error: e instanceof Error ? e.message : String(e) }));
         }
-        actions.refreshAfterWrite();
       }).open();
     });
   }
@@ -418,7 +422,6 @@ function renderDetail(
   listing: Listing,
   callbacks: DashboardCallbacks,
   actions: DashboardActions,
-  vaultService: VaultService,
   state: OverviewState,
 ) {
   const detail = root.createDiv({ cls: 'ka-detail' });
@@ -499,7 +502,7 @@ function renderDetail(
 
   // Aktionen
   const actionsEl = detail.createDiv({ cls: 'ka-detail-actions' });
-  renderActions(actionsEl, app, listing, callbacks, actions, vaultService, state, 'detail');
+  renderActions(actionsEl, app, listing, callbacks, actions, state, 'detail');
 }
 
 export function renderOverview(
@@ -509,7 +512,6 @@ export function renderOverview(
   state: OverviewState,
   callbacks: DashboardCallbacks,
   actions: DashboardActions,
-  vaultService: VaultService,
   dropdownState: DropdownState,
 ) {
   // Closure for partial re-render (search/sort updates only table + bulk bar)
@@ -517,18 +519,18 @@ export function renderOverview(
     root.querySelector('.ka-bulk-bar')?.remove();
     root.querySelector('.ka-table')?.remove();
     root.querySelector('.ka-empty')?.remove();
-    renderBulkBar(root, app, listings, state, actions, vaultService, dropdownState, doRenderTableOnly);
-    renderTable(root, app, listings, state, callbacks, actions, vaultService, doRenderTableOnly);
+    renderBulkBar(root, app, listings, state, actions, dropdownState, doRenderTableOnly);
+    renderTable(root, app, listings, state, callbacks, actions, doRenderTableOnly);
   };
 
   renderSummaryStats(root, listings);
 
   if (state.expandedListing) {
-    renderDetail(root, app, state.expandedListing, callbacks, actions, vaultService, state);
+    renderDetail(root, app, state.expandedListing, callbacks, actions, state);
   } else {
     renderFilters(root, state, actions);
     renderSearch(root, state, doRenderTableOnly);
-    renderBulkBar(root, app, listings, state, actions, vaultService, dropdownState, doRenderTableOnly);
-    renderTable(root, app, listings, state, callbacks, actions, vaultService, doRenderTableOnly);
+    renderBulkBar(root, app, listings, state, actions, dropdownState, doRenderTableOnly);
+    renderTable(root, app, listings, state, callbacks, actions, doRenderTableOnly);
   }
 }

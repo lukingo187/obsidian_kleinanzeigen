@@ -1,5 +1,5 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
-import { Listing, DEFAULT_CARRIER } from '../models/listing';
+import { Listing, DEFAULT_CARRIER, isCarrierName } from '../models/listing';
 import { todayString } from '../utils/formatting';
 import { PortoState, renderCarrierPortoUI } from '../utils/portoUI';
 import { t } from '../i18n';
@@ -74,7 +74,7 @@ export class ShipModal extends Modal {
           this.listing.verschickt = true;
           this.listing.verschickt_am = todayString();
           this.listing.anschrift = this.anschrift.trim();
-          this.listing.carrier = this.portoState.carrier;
+          this.listing.carrier = isCarrierName(this.portoState.carrier) ? this.portoState.carrier : undefined;
           this.listing.porto_name = this.portoState.portoName;
           this.listing.porto_price = this.portoState.portoPrice;
           this.listing.sendungsnummer = this.sendungsnummer || undefined;

@@ -1,5 +1,5 @@
 import { App, TFile, TFolder, normalizePath, parseYaml } from 'obsidian';
-import { Listing } from '../models/listing';
+import { Listing, isZustand, isPreisart, isStatus, isCarrierName, isBezahlart } from '../models/listing';
 
 export class VaultService {
   private getBaseFolder: () => string;
@@ -36,20 +36,20 @@ export class VaultService {
   }
 
   async updateListing(listing: Listing): Promise<void> {
-    if (!listing.filePath) return;
+    if (!listing.filePath) throw new Error('updateListing called without filePath');
 
     const file = this.app.vault.getAbstractFileByPath(listing.filePath);
-    if (!(file instanceof TFile)) return;
+    if (!(file instanceof TFile)) throw new Error(`File not found: ${listing.filePath}`);
 
     const content = this.buildFileContent(listing);
     await this.app.vault.modify(file, content);
   }
 
   async deleteListing(listing: Listing): Promise<void> {
-    if (!listing.filePath) return;
+    if (!listing.filePath) throw new Error('deleteListing called without filePath');
 
     const file = this.app.vault.getAbstractFileByPath(listing.filePath);
-    if (!(file instanceof TFile)) return;
+    if (!(file instanceof TFile)) throw new Error(`File not found: ${listing.filePath}`);
 
     await this.app.vault.trash(file, true);
   }
@@ -88,8 +88,12 @@ export class VaultService {
 
     // Fallback: if cache isn't ready yet, parse the file content directly
     if (!fm) {
-      const content = await this.app.vault.read(file);
-      fm = this.parseFrontmatter(content);
+      try {
+        const content = await this.app.vault.read(file);
+        fm = this.parseFrontmatter(content);
+      } catch {
+        return null;
+      }
     }
 
     if (!fm) return null;
@@ -97,10 +101,10 @@ export class VaultService {
     return {
       artikel: fm.artikel ?? file.basename,
       beschreibung: fm.beschreibung,
-      zustand: fm.zustand ?? 'ok',
-      status: fm.status ?? 'active',
+      zustand: isZustand(fm.zustand) ? fm.zustand : 'ok',
+      status: isStatus(fm.status) ? fm.status : 'active',
       preis: Number(fm.preis) || 0,
-      preisart: fm.preisart ?? 'VB',
+      preisart: isPreisart(fm.preisart) ? fm.preisart : 'negotiable',
       verkauft_fuer: fm.verkauft_fuer,
       eingestellt_am: fm.eingestellt_am ?? '',
       erstmals_eingestellt_am: fm.erstmals_eingestellt_am ?? '',
@@ -109,8 +113,8 @@ export class VaultService {
       verkauft_am: fm.verkauft_am,
       bezahlt: fm.bezahlt ?? false,
       bezahlt_am: fm.bezahlt_am,
-      bezahlart: fm.bezahlart,
-      carrier: fm.carrier,
+      bezahlart: isBezahlart(fm.bezahlart) ? fm.bezahlart : undefined,
+      carrier: isCarrierName(fm.carrier) ? fm.carrier : undefined,
       porto_name: fm.porto_name,
       porto_price: fm.porto_price != null ? Number(fm.porto_price) : undefined,
       anschrift: fm.anschrift,

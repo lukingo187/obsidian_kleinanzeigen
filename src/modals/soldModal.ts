@@ -1,15 +1,13 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
-import { Listing } from '../models/listing';
+import { Listing, Bezahlart, BEZAHLART_OPTIONS, isBezahlart } from '../models/listing';
 import { todayString } from '../utils/formatting';
 import { t } from '../i18n';
-
-const BEZAHLART_OPTIONS = ['PayPal', 'Überweisung', 'Barzahlung', 'Sonstige'];
 
 export class SoldModal extends Modal {
   private listing: Listing;
   private isEdit: boolean;
   private verkauftFuer: number;
-  private bezahlart: string;
+  private bezahlart: Bezahlart;
   private bezahlt: boolean;
   private onSubmit: (listing: Listing) => void;
 
@@ -18,7 +16,7 @@ export class SoldModal extends Modal {
     this.listing = { ...listing };
     this.isEdit = listing.verkauft;
     this.verkauftFuer = listing.verkauft_fuer ?? listing.preis;
-    this.bezahlart = listing.bezahlart ?? 'PayPal';
+    this.bezahlart = listing.bezahlart ?? BEZAHLART_OPTIONS[0];
     this.bezahlt = listing.bezahlt;
     this.onSubmit = onSubmit;
   }
@@ -44,7 +42,7 @@ export class SoldModal extends Modal {
           dd.addOption(b, b);
         }
         dd.setValue(this.bezahlart);
-        dd.onChange(v => this.bezahlart = v);
+        dd.onChange(v => { if (isBezahlart(v)) this.bezahlart = v; });
       });
 
     new Setting(contentEl)

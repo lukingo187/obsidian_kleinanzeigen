@@ -85,6 +85,9 @@ export function calculateStats(listings: Listing[]): Stats {
       case 'sold': soldCount++; break;
       case 'shipped': shippedCount++; break;
       case 'completed': completedCount++; break;
+      case 'expired':
+      case 'archived':
+        break;
     }
 
     if (l.verkauft) totalSoldCount++;

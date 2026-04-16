@@ -17,6 +17,8 @@ data.json
 # Internal dev docs
 PLAN.md
 DESIGN.md
+RELEASES.md
+bugs.md
 docs/
 
 # Claude Code

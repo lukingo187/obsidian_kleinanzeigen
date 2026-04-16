@@ -204,6 +204,7 @@ export const de = {
 
   'settings.general.folder':       'Ordner',
   'settings.general.folderDesc':   'Ordner im Vault, in dem Artikel gespeichert werden.',
+  'settings.general.folderSearch': 'Ordner suchen…',
   'settings.general.copyOverview': 'Übersicht nach Einstellen',
   'settings.general.copyOverviewDesc': 'Nach dem Erstellen eines Artikels Kopier-Buttons für Titel und Beschreibung anzeigen.',
 
@@ -258,12 +259,19 @@ export const de = {
   // ── Notices ──────────────────────────────────────────────
   'notice.createError':         'Fehler beim Erstellen: {error}',
   'notice.saveError':           'Fehler beim Speichern: {error}',
+  'notice.refreshError':        'Fehler beim Laden der Artikel.',
+  'notice.statusError':         'Fehler beim Statuswechsel: {error}',
+  'notice.undoError':           'Fehler beim Rückgängig machen: {error}',
+  'notice.loadError':           'Einstellungen konnten nicht geladen werden. Standardwerte werden verwendet.',
+  'notice.export.csv':          'CSV exportiert: {count} Artikel',
+  'notice.export.pdf':          'PDF exportiert: {count} Artikel',
   'notice.validation.nameRequired':      'Bitte einen Artikelnamen eingeben.',
   'notice.validation.priceRequired':     'Bitte einen gültigen Preis eingeben.',
   'notice.validation.sellPriceRequired': 'Bitte einen gültigen Verkaufspreis eingeben.',
   'notice.validation.addressRequired':   'Bitte eine Anschrift eingeben.',
   'notice.ai.describeFirst':             'Bitte beschreibe den Artikel zuerst.',
   'notice.ai.error':                     'Fehler bei der KI-Analyse.',
+  'notice.ai.noKey':                     'Kein API-Key für {provider} hinterlegt. Bitte in den Einstellungen konfigurieren.',
 
   // ── Plugin ───────────────────────────────────────────────
   'plugin.ribbonTooltip':    'Kleinanzeigen Dashboard',
@@ -477,6 +485,7 @@ export const en: Record<keyof typeof de, string> = {
 
   'settings.general.folder':       'Folder',
   'settings.general.folderDesc':   'Vault folder where items are stored.',
+  'settings.general.folderSearch': 'Search folders…',
   'settings.general.copyOverview': 'Overview after listing',
   'settings.general.copyOverviewDesc': 'Show copy buttons for title and description after creating an item.',
 
@@ -531,12 +540,19 @@ export const en: Record<keyof typeof de, string> = {
   // ── Notices ──────────────────────────────────────────────
   'notice.createError':         'Error creating item: {error}',
   'notice.saveError':           'Error saving: {error}',
+  'notice.refreshError':        'Failed to load items.',
+  'notice.statusError':         'Failed to update status: {error}',
+  'notice.undoError':           'Failed to undo: {error}',
+  'notice.loadError':           'Could not load settings. Using defaults.',
+  'notice.export.csv':          'CSV exported: {count} items',
+  'notice.export.pdf':          'PDF exported: {count} items',
   'notice.validation.nameRequired':      'Please enter an item name.',
   'notice.validation.priceRequired':     'Please enter a valid price.',
   'notice.validation.sellPriceRequired': 'Please enter a valid sale price.',
   'notice.validation.addressRequired':   'Please enter an address.',
   'notice.ai.describeFirst':             'Please describe the item first.',
   'notice.ai.error':                     'AI analysis failed.',
+  'notice.ai.noKey':                     'No API key for {provider}. Please add one in Settings.',
 
   // ── Plugin ───────────────────────────────────────────────
   'plugin.ribbonTooltip':    'Kleinanzeigen Dashboard',

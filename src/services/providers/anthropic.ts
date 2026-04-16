@@ -24,8 +24,13 @@ export class AnthropicAdapter implements AIProviderAdapter {
       throw new Error(`Anthropic API: ${errMsg}`);
     }
 
+    const text = response.json?.content?.[0]?.text;
+    if (typeof text !== 'string') {
+      throw new Error(`Anthropic API: unexpected response shape (content blocked or empty)`);
+    }
+
     return {
-      text: response.json.content[0].text,
+      text,
       inputTokens: response.json.usage?.input_tokens ?? 0,
       outputTokens: response.json.usage?.output_tokens ?? 0,
     };

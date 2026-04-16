@@ -151,7 +151,14 @@ export default class KleinanzeigenPlugin extends Plugin {
   }
 
   async loadSettings() {
-    const saved = await this.loadData();
+    let saved: unknown;
+    try {
+      saved = await this.loadData();
+    } catch (e) {
+      console.error('[Kleinanzeigen] Failed to load settings:', e);
+      new Notice(t('notice.loadError'));
+      saved = null;
+    }
     this.settings = Object.assign({}, DEFAULT_SETTINGS, saved);
     // Ensure nested objects are merged properly
     this.settings.aiProviders = Object.assign(
@@ -181,7 +188,7 @@ export default class KleinanzeigenPlugin extends Plugin {
       usage.totalOutputTokens += outputTokens;
       usage.totalCostUSD += AIService.calculateCost(model, inputTokens, outputTokens);
       usage.callCount += 1;
-      this.saveSettings();
+      this.saveSettings().catch(e => console.error('[Kleinanzeigen] Failed to save usage:', e));
     });
   }
 }

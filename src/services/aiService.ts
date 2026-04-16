@@ -1,11 +1,12 @@
-import { AIProvider, PluginSettings, ZUSTAND_OPTIONS, CARRIERS, CARRIER_OPTIONS, MODEL_PRICING, type DescriptionStyle } from '../models/listing';
+import { AIProvider, PluginSettings, ZUSTAND_OPTIONS, CARRIERS, CARRIER_OPTIONS, MODEL_PRICING, type DescriptionStyle, type Zustand, type CarrierName, isZustand, isCarrierName } from '../models/listing';
 import { formatCurrency } from '../utils/formatting';
 import { getAdapter } from './providers/index';
+import { t } from '../i18n';
 
 export interface ParsedListing {
   artikel: string;
-  zustand: string;
-  carrier?: string;
+  zustand: Zustand;
+  carrier?: CarrierName;
   porto_name?: string;
   porto_price?: number;
   beschreibung: string;
@@ -26,7 +27,7 @@ export class AIService {
     const config = this.settings.aiProviders[provider];
 
     if (!config.apiKey) {
-      throw new Error(`Kein API-Key für ${provider} hinterlegt. Bitte in den Einstellungen konfigurieren.`);
+      throw new Error(t('notice.ai.noKey', { provider }));
     }
 
     const prompt = this.buildParsePrompt(userText);
@@ -111,14 +112,14 @@ ${footerInstruction}`;
       const parsed = JSON.parse(jsonStr);
       return {
         artikel: parsed.artikel ?? '',
-        zustand: parsed.zustand ?? 'ok',
-        carrier: parsed.carrier,
+        zustand: isZustand(parsed.zustand) ? parsed.zustand : 'ok',
+        carrier: isCarrierName(parsed.carrier) ? parsed.carrier : undefined,
         porto_name: parsed.porto_name,
         porto_price: parsed.porto_price != null ? Number(parsed.porto_price) : undefined,
         beschreibung: parsed.beschreibung ?? '',
       };
     } catch {
-      throw new Error('KI-Antwort konnte nicht verarbeitet werden. Bitte erneut versuchen.');
+      throw new Error(t('notice.ai.error'));
     }
   }
 

@@ -61,10 +61,10 @@ export interface Listing {
   // Payment
   bezahlt: boolean;
   bezahlt_am?: string;
-  bezahlart?: string;
+  bezahlart?: Bezahlart;
 
   // Shipping
-  carrier?: string;
+  carrier?: CarrierName;
   porto_name?: string;
   porto_price?: number;
   anschrift?: string;
@@ -85,6 +85,50 @@ export const STATUS_OPTIONS: Status[] = [
   'active', 'sold', 'shipped', 'completed', 'expired', 'archived',
 ];
 
+export type Bezahlart = 'PayPal' | 'Überweisung' | 'Barzahlung' | 'Sonstige';
+
+export const BEZAHLART_OPTIONS: Bezahlart[] = ['PayPal', 'Überweisung', 'Barzahlung', 'Sonstige'];
+
+export function isZustand(v: unknown): v is Zustand {
+  return typeof v === 'string' && (ZUSTAND_OPTIONS as readonly string[]).includes(v);
+}
+
+export function isPreisart(v: unknown): v is Preisart {
+  return v === 'negotiable' || v === 'fixed';
+}
+
+export function isStatus(v: unknown): v is Status {
+  return typeof v === 'string' && (STATUS_OPTIONS as readonly string[]).includes(v);
+}
+
+export function isCarrierName(v: unknown): v is CarrierName {
+  return typeof v === 'string' && (CARRIERS as readonly string[]).includes(v);
+}
+
+export function isBezahlart(v: unknown): v is Bezahlart {
+  return typeof v === 'string' && (BEZAHLART_OPTIONS as readonly string[]).includes(v);
+}
+
+export function buildUndoListing(listing: Listing, targetStatus: Status): Listing {
+  const updated: Listing = { ...listing, status: targetStatus };
+  if (listing.status === 'sold') {
+    updated.verkauft = false;
+    updated.verkauft_am = undefined;
+    updated.verkauft_fuer = undefined;
+    updated.bezahlt = false;
+    updated.bezahlt_am = undefined;
+    updated.bezahlart = undefined;
+  }
+  if (listing.status === 'shipped') {
+    updated.verschickt = false;
+    updated.verschickt_am = undefined;
+    updated.anschrift = undefined;
+    updated.sendungsnummer = undefined;
+    updated.label_erstellt = false;
+  }
+  return updated;
+}
+
 
 // ── Templates ──
 
@@ -95,7 +139,7 @@ export interface ArticleTemplate {
   preis?: number;
   zustand?: Zustand;
   preisart?: Preisart;
-  carrier?: string;
+  carrier?: CarrierName;
   porto_name?: string;
   porto_price?: number;
   beschreibungsvorlage?: string;
@@ -127,8 +171,8 @@ export const DEFAULT_MODELS: Record<AIProvider, { id: string; label: string }[]>
   ],
   anthropic: [
     { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (schnell & günstig)' },
-    { id: 'claude-sonnet-4-5-20250514', label: 'Claude Sonnet 4.5' },
-    { id: 'claude-sonnet-4-6-20250514', label: 'Claude Sonnet 4.6' },
+    { id: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5' },
+    { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
     { id: 'claude-opus-4-6', label: 'Claude Opus 4.6 (bestes Modell)' },
   ],
   openai: [
@@ -165,8 +209,8 @@ export interface PluginSettings {
 // Pricing per 1M tokens in USD
 export const MODEL_PRICING: Record<string, { input: number; output: number }> = {
   'claude-haiku-4-5-20251001': { input: 0.80, output: 4.00 },
-  'claude-sonnet-4-5-20250514': { input: 3.00, output: 15.00 },
-  'claude-sonnet-4-6-20250514': { input: 3.00, output: 15.00 },
+  'claude-sonnet-4-5': { input: 3.00, output: 15.00 },
+  'claude-sonnet-4-6': { input: 3.00, output: 15.00 },
   'claude-opus-4-6': { input: 15.00, output: 75.00 },
   'gpt-4o-mini': { input: 0.15, output: 0.60 },
   'gpt-4o': { input: 2.50, output: 10.00 },

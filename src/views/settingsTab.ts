@@ -1,11 +1,11 @@
 import { App, FuzzySuggestModal, Modal, Notice, PluginSettingTab, Setting, TFolder, setIcon } from 'obsidian';
-import { AIProvider, DEFAULT_MODELS, DEFAULT_USAGE, ZUSTAND_OPTIONS, Zustand, Preisart, ArticleTemplate, DESCRIPTION_STYLES, DescriptionStyle } from '../models/listing';
+import { AIProvider, DEFAULT_MODELS, DEFAULT_USAGE, ZUSTAND_OPTIONS, Zustand, Preisart, ArticleTemplate, DESCRIPTION_STYLES, DescriptionStyle, isZustand, isPreisart, isCarrierName } from '../models/listing';
 import { addUsageCard } from './dashboard-helpers';
 import { renderCarrierPortoSettingsUI } from '../utils/portoUI';
 import { AIService } from '../services/aiService';
-import { TemplateService } from '../services/templateService';
+import { createTemplate, updateTemplate, deleteTemplate } from '../services/templateService';
 import { ConfirmModal } from '../modals/confirmModal';
-import { t, setLang, type Lang } from '../i18n';
+import { t, setLang, type Lang, type StringKey } from '../i18n';
 import type KleinanzeigenPlugin from '../main';
 
 class FolderSuggestModal extends FuzzySuggestModal<TFolder> {
@@ -16,7 +16,7 @@ class FolderSuggestModal extends FuzzySuggestModal<TFolder> {
     super(app);
     this.onChooseCallback = onChoose;
     this.folders = this.getAllFolders();
-    this.setPlaceholder('Ordner suchen…');
+    this.setPlaceholder(t('settings.general.folderSearch'));
   }
 
   private getAllFolders(): TFolder[] {
@@ -90,10 +90,10 @@ class TemplateFormModal extends Modal {
       .addDropdown(dd => {
         dd.addOption('', t('common.any'));
         for (const z of ZUSTAND_OPTIONS) {
-          dd.addOption(z, t(`zustand.${z}` as any));
+          dd.addOption(z, t(`zustand.${z}` as StringKey));
         }
         dd.setValue(this.tpl.zustand ?? '');
-        dd.onChange(v => { this.tpl.zustand = v ? v as Zustand : undefined; });
+        dd.onChange(v => { this.tpl.zustand = isZustand(v) ? v : undefined; });
       });
 
     new Setting(contentEl)
@@ -103,7 +103,7 @@ class TemplateFormModal extends Modal {
         dd.addOption('negotiable', t('preisart.negotiable'));
         dd.addOption('fixed', t('preisart.fixed'));
         dd.setValue(this.tpl.preisart ?? '');
-        dd.onChange(v => { this.tpl.preisart = v ? v as Preisart : undefined; });
+        dd.onChange(v => { this.tpl.preisart = isPreisart(v) ? v : undefined; });
       });
 
     const portoSetting = new Setting(contentEl).setName(t('settings.templates.field.shipping'));
@@ -112,7 +112,7 @@ class TemplateFormModal extends Modal {
       portoContainer,
       { carrier: this.tpl.carrier ?? '', portoName: this.tpl.porto_name, portoPrice: this.tpl.porto_price },
       (state) => {
-        this.tpl.carrier = state.carrier || undefined;
+        this.tpl.carrier = isCarrierName(state.carrier) ? state.carrier : undefined;
         this.tpl.porto_name = state.portoName;
         this.tpl.porto_price = state.portoPrice;
       },
@@ -195,8 +195,9 @@ export class SettingsTab extends PluginSettingTab {
         dd.addOption('en', 'English');
         dd.setValue(settings.language);
         dd.onChange(async (value) => {
-          settings.language = value as Lang;
-          setLang(value as Lang);
+          const lang = value === 'de' || value === 'en' ? value : 'de';
+          settings.language = lang;
+          setLang(lang);
           await this.plugin.saveSettings();
           this.display();
           this.plugin.refreshDashboard();
@@ -256,7 +257,8 @@ export class SettingsTab extends PluginSettingTab {
         }
         dd.setValue(settings.aiProvider);
         dd.onChange(async (value) => {
-          settings.aiProvider = value as AIProvider;
+          if (value !== 'anthropic' && value !== 'openai' && value !== 'google') return;
+          settings.aiProvider = value;
           await this.plugin.saveSettings();
           this.display();
         });
@@ -370,6 +372,7 @@ export class SettingsTab extends PluginSettingTab {
         }
         dd.setValue(settings.descriptionStyle);
         dd.onChange(async (value) => {
+          if (!DESCRIPTION_STYLES.some(s => s.id === value)) return;
           settings.descriptionStyle = value as DescriptionStyle;
           await this.plugin.saveSettings();
           this.display();
@@ -464,9 +467,9 @@ export class SettingsTab extends PluginSettingTab {
       const meta: string[] = [];
       if (tpl.artikel) meta.push(tpl.artikel);
       if (tpl.preis) meta.push(`${tpl.preis}€`);
-      if (tpl.zustand) meta.push(t(`zustand.${tpl.zustand}` as any));
+      if (tpl.zustand) meta.push(t(`zustand.${tpl.zustand}` as StringKey));
       if (tpl.carrier) meta.push(tpl.carrier);
-      if (tpl.preisart) meta.push(t(`preisart.${tpl.preisart}` as any));
+      if (tpl.preisart) meta.push(t(`preisart.${tpl.preisart}` as StringKey));
 
       new Setting(containerEl)
         .setName(tpl.name)
@@ -481,7 +484,7 @@ export class SettingsTab extends PluginSettingTab {
           btn.setTooltip(t('common.delete'));
           btn.onClick(() => {
             new ConfirmModal(this.app, t('settings.templates.deleteConfirm', { name: tpl.name }), async () => {
-              settings.templates = TemplateService.delete(settings.templates, tpl.id);
+              settings.templates = deleteTemplate(settings.templates, tpl.id);
               await this.plugin.saveSettings();
               this.display();
             }).open();
@@ -502,7 +505,7 @@ export class SettingsTab extends PluginSettingTab {
 
     new TemplateFormModal(this.app, initialTpl, async (saved) => {
       if (isNew) {
-        settings.templates = TemplateService.create(settings.templates, {
+        settings.templates = createTemplate(settings.templates, {
           name: saved.name,
           artikel: saved.artikel,
           preis: saved.preis,
@@ -514,7 +517,7 @@ export class SettingsTab extends PluginSettingTab {
           beschreibungsvorlage: saved.beschreibungsvorlage,
         });
       } else {
-        settings.templates = TemplateService.update(settings.templates, saved);
+        settings.templates = updateTemplate(settings.templates, saved);
       }
       await this.plugin.saveSettings();
       this.display();

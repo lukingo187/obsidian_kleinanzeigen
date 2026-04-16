@@ -1,5 +1,5 @@
 import { ItemView, Notice, WorkspaceLeaf, setIcon } from 'obsidian';
-import { Listing, Status } from '../models/listing';
+import { Listing, Status, buildUndoListing } from '../models/listing';
 import { t } from '../i18n';
 import { VaultService } from '../services/vaultService';
 import type KleinanzeigenPlugin from '../main';
@@ -35,6 +35,8 @@ export class DashboardView extends ItemView {
     refreshAfterWrite: () => this.refreshAfterWrite(),
     transitionStatus: (listing, status) => this.transitionStatus(listing, status),
     undoStatus: (listing, target) => this.undoStatus(listing, target),
+    updateListing: (listing) => this.vaultService.updateListing(listing),
+    deleteListing: (listing) => this.deleteListing(listing),
   };
 
   constructor(
@@ -112,6 +114,7 @@ export class DashboardView extends ItemView {
       this.listings = await this.vaultService.getAllListings();
     } catch (e) {
       console.error('[Kleinanzeigen]', e);
+      new Notice(t('notice.refreshError'));
       this.listings = [];
     }
     if (expandedPath) {
@@ -132,7 +135,7 @@ export class DashboardView extends ItemView {
     this.renderTabs(root);
 
     switch (this.activeTab) {
-      case 'overview': renderOverview(root, this.app, this.listings, this.overviewState, this.callbacks, this.actions, this.vaultService, this.dropdownState); break;
+      case 'overview': renderOverview(root, this.app, this.listings, this.overviewState, this.callbacks, this.actions, this.dropdownState); break;
       case 'stats': renderStatsView(root, this.listings, this.statsState, this.plugin.settings); break;
     }
   }
@@ -195,38 +198,22 @@ export class DashboardView extends ItemView {
       await this.vaultService.updateListing({ ...listing, status });
       this.refreshAfterWrite();
     } catch (e) {
-      new Notice(`Fehler beim Statuswechsel: ${e instanceof Error ? e.message : String(e)}`);
+      new Notice(t('notice.statusError', { error: e instanceof Error ? e.message : String(e) }));
     }
   }
 
   private async undoStatus(listing: Listing, targetStatus: Status) {
-    const updated: Listing = { ...listing, status: targetStatus };
-
-    // Reset sale + payment fields when reverting from sold
-    if (listing.status === 'sold') {
-      updated.verkauft = false;
-      updated.verkauft_am = undefined;
-      updated.verkauft_fuer = undefined;
-      updated.bezahlt = false;
-      updated.bezahlt_am = undefined;
-      updated.bezahlart = undefined;
-    }
-
-    // Reset shipping fields when reverting from shipped
-    if (listing.status === 'shipped') {
-      updated.verschickt = false;
-      updated.verschickt_am = undefined;
-      updated.anschrift = undefined;
-      updated.sendungsnummer = undefined;
-      updated.label_erstellt = false;
-    }
-
     try {
-      await this.vaultService.updateListing(updated);
+      await this.vaultService.updateListing(buildUndoListing(listing, targetStatus));
       this.refreshAfterWrite();
     } catch (e) {
-      new Notice(`Fehler beim Rückgängig machen: ${e instanceof Error ? e.message : String(e)}`);
+      new Notice(t('notice.undoError', { error: e instanceof Error ? e.message : String(e) }));
     }
+  }
+
+  private async deleteListing(listing: Listing) {
+    await this.vaultService.deleteListing(listing);
+    this.refreshAfterWrite();
   }
 
 }

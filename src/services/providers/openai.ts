@@ -23,8 +23,13 @@ export class OpenAIAdapter implements AIProviderAdapter {
       throw new Error(`OpenAI API: ${errMsg}`);
     }
 
+    const text = response.json?.choices?.[0]?.message?.content;
+    if (typeof text !== 'string') {
+      throw new Error(`OpenAI API: unexpected response shape (content blocked or empty)`);
+    }
+
     return {
-      text: response.json.choices[0].message.content,
+      text,
       inputTokens: response.json.usage?.prompt_tokens ?? 0,
       outputTokens: response.json.usage?.completion_tokens ?? 0,
     };

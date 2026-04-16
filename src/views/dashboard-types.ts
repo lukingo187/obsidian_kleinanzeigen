@@ -37,4 +37,6 @@ export interface DashboardActions {
   refreshAfterWrite: () => void;
   transitionStatus: (listing: Listing, status: Status) => Promise<void>;
   undoStatus: (listing: Listing, targetStatus: Status) => Promise<void>;
+  updateListing: (listing: Listing) => Promise<void>;
+  deleteListing: (listing: Listing) => Promise<void>;
 }

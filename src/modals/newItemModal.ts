@@ -1,5 +1,5 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
-import { Listing, ZUSTAND_OPTIONS, Zustand, Preisart, DEFAULT_CARRIER } from '../models/listing';
+import { Listing, ZUSTAND_OPTIONS, Zustand, Preisart, DEFAULT_CARRIER, isZustand, isPreisart, isCarrierName } from '../models/listing';
 import { t } from '../i18n';
 import { todayString } from '../utils/formatting';
 import { PortoState, renderCarrierPortoUI } from '../utils/portoUI';
@@ -122,7 +122,7 @@ export class NewItemModal extends Modal {
     aiBtn.addEventListener('click', async () => {
       const text = freeformArea.value.trim();
       if (!text) {
-        new Notice('Bitte beschreibe den Artikel zuerst.');
+        new Notice(t('notice.ai.describeFirst'));
         return;
       }
 
@@ -229,7 +229,7 @@ export class NewItemModal extends Modal {
         dd.addOption('negotiable', t('preisart.negotiable'));
         dd.addOption('fixed', t('preisart.fixed'));
         dd.setValue(this.preisart);
-        dd.onChange(v => this.preisart = v as Preisart);
+        dd.onChange(v => { if (isPreisart(v)) this.preisart = v; });
         this.preisartSelect = dd.selectEl;
       });
 
@@ -238,7 +238,7 @@ export class NewItemModal extends Modal {
       .addDropdown(dd => {
         for (const z of ZUSTAND_OPTIONS) dd.addOption(z, t(`zustand.${z}`));
         dd.setValue(this.zustand);
-        dd.onChange(v => this.zustand = v as Zustand);
+        dd.onChange(v => { if (isZustand(v)) this.zustand = v; });
         this.zustandSelect = dd.selectEl;
       });
 
@@ -272,7 +272,7 @@ export class NewItemModal extends Modal {
             status: 'active',
             preis: this.preis,
             preisart: this.preisart,
-            carrier: this.portoState.carrier,
+            carrier: isCarrierName(this.portoState.carrier) ? this.portoState.carrier : undefined,
             porto_name: this.portoState.portoName,
             porto_price: this.portoState.portoPrice,
             eingestellt_am: today,
@@ -288,7 +288,7 @@ export class NewItemModal extends Modal {
           this.close();
         }))
       .addButton(btn => btn
-        .setButtonText('Abbrechen')
+        .setButtonText(t('common.cancel'))
         .onClick(() => this.close()));
   }
 
