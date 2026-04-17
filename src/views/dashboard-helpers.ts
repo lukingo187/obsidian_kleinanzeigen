@@ -41,7 +41,7 @@ export function createCopyButton(container: HTMLElement, text: string, value: st
   const btn = container.createEl('button', { text, cls });
   btn.addEventListener('click', async () => {
     await navigator.clipboard.writeText(value);
-    const original = btn.textContent!;
+    const original = btn.textContent ?? text;
     btn.textContent = t('common.copied');
     setTimeout(() => { btn.textContent = original; }, 2000);
   });

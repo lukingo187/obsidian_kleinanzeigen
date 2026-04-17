@@ -6,23 +6,23 @@ import { t } from '../i18n';
 
 export class ShipModal extends Modal {
   private listing: Listing;
-  private anschrift = '';
+  private address = '';
   private portoState: PortoState;
-  private sendungsnummer = '';
-  private labelErstellt = false;
+  private trackingNumber = '';
+  private labelPrinted = false;
   private onSubmit: (listing: Listing) => void;
 
   constructor(app: App, listing: Listing, onSubmit: (listing: Listing) => void) {
     super(app);
     this.listing = { ...listing };
-    this.anschrift = listing.anschrift ?? '';
+    this.address = listing.shipping_address ?? '';
     this.portoState = {
       carrier: listing.carrier ?? DEFAULT_CARRIER,
-      portoName: listing.porto_name,
-      portoPrice: listing.porto_price,
+      shippingService: listing.shipping_service,
+      shippingCost: listing.shipping_cost,
     };
-    this.sendungsnummer = listing.sendungsnummer ?? '';
-    this.labelErstellt = listing.label_erstellt;
+    this.trackingNumber = listing.tracking_number ?? '';
+    this.labelPrinted = listing.label_printed;
     this.onSubmit = onSubmit;
   }
 
@@ -30,22 +30,22 @@ export class ShipModal extends Modal {
     const { contentEl } = this;
     contentEl.addClass('ka-modal');
 
-    contentEl.createEl('h2', { text: `${t('modal.ship.title')} — ${this.listing.artikel}` });
+    contentEl.createEl('h2', { text: `${t('modal.ship.title')} — ${this.listing.title}` });
 
     const addrContainer = contentEl.createDiv();
     new Setting(addrContainer)
       .setName(t('modal.ship.field.address'))
       .addTextArea(ta => {
         ta.setPlaceholder(t('modal.ship.field.addressPlaceholder'));
-        ta.setValue(this.anschrift);
-        ta.onChange(v => this.anschrift = v);
+        ta.setValue(this.address);
+        ta.onChange(v => this.address = v);
         ta.inputEl.rows = 3;
         ta.inputEl.addClass('ka-textarea');
       });
 
-    const isAbholung = () => this.portoState.carrier === 'Abholung';
+    const isPickup = () => this.portoState.carrier === 'Pickup';
     const updateAddrVisibility = () => {
-      addrContainer.style.display = isAbholung() ? 'none' : '';
+      addrContainer.style.display = isPickup() ? 'none' : '';
     };
 
     renderCarrierPortoUI({
@@ -54,10 +54,10 @@ export class ShipModal extends Modal {
       onChange: () => updateAddrVisibility(),
       showTracking: true,
       trackingState: {
-        sendungsnummer: this.sendungsnummer,
-        labelErstellt: this.labelErstellt,
-        onSendungsnummerChange: v => this.sendungsnummer = v,
-        onLabelChange: v => this.labelErstellt = v,
+        trackingNumber: this.trackingNumber,
+        labelPrinted: this.labelPrinted,
+        onTrackingNumberChange: v => this.trackingNumber = v,
+        onLabelChange: v => this.labelPrinted = v,
       },
     });
 
@@ -68,17 +68,17 @@ export class ShipModal extends Modal {
         .setButtonText(t('modal.ship.submit'))
         .setCta()
         .onClick(() => {
-          if (!isAbholung() && !this.anschrift.trim()) { new Notice(t('notice.validation.addressRequired')); return; }
+          if (!isPickup() && !this.address.trim()) { new Notice(t('notice.validation.addressRequired')); return; }
 
           this.listing.status = 'shipped';
-          this.listing.verschickt = true;
-          this.listing.verschickt_am = todayString();
-          this.listing.anschrift = this.anschrift.trim();
+          this.listing.shipped = true;
+          this.listing.shipped_at = todayString();
+          this.listing.shipping_address = this.address.trim();
           this.listing.carrier = isCarrierName(this.portoState.carrier) ? this.portoState.carrier : undefined;
-          this.listing.porto_name = this.portoState.portoName;
-          this.listing.porto_price = this.portoState.portoPrice;
-          this.listing.sendungsnummer = this.sendungsnummer || undefined;
-          this.listing.label_erstellt = this.labelErstellt;
+          this.listing.shipping_service = this.portoState.shippingService;
+          this.listing.shipping_cost = this.portoState.shippingCost;
+          this.listing.tracking_number = this.trackingNumber || undefined;
+          this.listing.label_printed = this.labelPrinted;
 
           this.onSubmit(this.listing);
           this.close();

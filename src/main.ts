@@ -7,10 +7,11 @@ import { EditListingModal } from './modals/editListingModal';
 import { SoldModal } from './modals/soldModal';
 import { ShipModal } from './modals/shipModal';
 import { RelistModal } from './modals/relistModal';
-import { Listing, PluginSettings, DEFAULT_SETTINGS, AIProvider } from './models/listing';
+import { Listing, PluginSettings, DEFAULT_SETTINGS, AIProvider, migrateDescriptionStyle } from './models/listing';
 import { AIService } from './services/aiService';
 import { SettingsTab } from './views/settingsTab';
 import { t, setLang } from './i18n';
+import { formatError } from './utils/formatting';
 
 export default class KleinanzeigenPlugin extends Plugin {
   private vaultService!: VaultService;
@@ -80,7 +81,7 @@ export default class KleinanzeigenPlugin extends Plugin {
           new PostCreationModal(this.app, listing).open();
         }
       } catch (e) {
-        new Notice(t('notice.createError', { error: e instanceof Error ? e.message : String(e) }));
+        new Notice(t('notice.createError', { error: formatError(e) }));
       }
     }).open();
   }
@@ -91,7 +92,7 @@ export default class KleinanzeigenPlugin extends Plugin {
         await this.vaultService.updateListing(updated);
         this.refreshDashboard();
       } catch (e) {
-        new Notice(t('notice.saveError', { error: e instanceof Error ? e.message : String(e) }));
+        new Notice(t('notice.saveError', { error: formatError(e) }));
       }
     }).open();
   }
@@ -102,7 +103,7 @@ export default class KleinanzeigenPlugin extends Plugin {
         await this.vaultService.updateListing(updated);
         this.refreshDashboard();
       } catch (e) {
-        new Notice(t('notice.saveError', { error: e instanceof Error ? e.message : String(e) }));
+        new Notice(t('notice.saveError', { error: formatError(e) }));
       }
     }).open();
   }
@@ -113,7 +114,7 @@ export default class KleinanzeigenPlugin extends Plugin {
         await this.vaultService.updateListing(updated);
         this.refreshDashboard();
       } catch (e) {
-        new Notice(t('notice.saveError', { error: e instanceof Error ? e.message : String(e) }));
+        new Notice(t('notice.saveError', { error: formatError(e) }));
       }
     }).open();
   }
@@ -124,7 +125,7 @@ export default class KleinanzeigenPlugin extends Plugin {
         await this.vaultService.updateListing(updated);
         this.refreshDashboard();
       } catch (e) {
-        new Notice(t('notice.saveError', { error: e instanceof Error ? e.message : String(e) }));
+        new Notice(t('notice.saveError', { error: formatError(e) }));
       }
     }).open();
   }
@@ -160,6 +161,7 @@ export default class KleinanzeigenPlugin extends Plugin {
       saved = null;
     }
     this.settings = Object.assign({}, DEFAULT_SETTINGS, saved);
+    this.settings.descriptionStyle = migrateDescriptionStyle(this.settings.descriptionStyle);
     // Ensure nested objects are merged properly
     this.settings.aiProviders = Object.assign(
       {},

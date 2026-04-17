@@ -28,14 +28,14 @@ function renderPeriodTable(container: HTMLElement, listings: Listing[], state: S
   for (const row of periodData) {
     const tr = tbody.createEl('tr');
     tr.createEl('td', { text: row.label, cls: 'ka-font-bold' });
-    tr.createEl('td', { text: row.eingestellt.toString() });
-    tr.createEl('td', { text: row.verkauft.toString() });
-    tr.createEl('td', { text: formatCurrency(row.umsatz) });
-    tr.createEl('td', { text: formatCurrency(row.portokosten) });
+    tr.createEl('td', { text: row.listed.toString() });
+    tr.createEl('td', { text: row.sold.toString() });
+    tr.createEl('td', { text: formatCurrency(row.revenue) });
+    tr.createEl('td', { text: formatCurrency(row.shippingCost) });
 
-    const gewinnCell = tr.createEl('td');
-    const cls = row.gewinn >= 0 ? 'ka-profit-positive' : 'ka-profit-negative';
-    gewinnCell.createSpan({ text: formatCurrency(row.gewinn), cls });
+    const profitCell = tr.createEl('td');
+    const cls = row.profit >= 0 ? 'ka-profit-positive' : 'ka-profit-negative';
+    profitCell.createSpan({ text: formatCurrency(row.profit), cls });
   }
 }
 
@@ -67,7 +67,6 @@ export function renderStatsView(root: HTMLElement, listings: Listing[], state: S
     card.createDiv({ cls: 'ka-stat-label', text: label });
   }
 
-  // Zeitraum-Toggle
   const toggle = root.createDiv({ cls: 'ka-filters' });
   const periodContainer = root.createDiv({ cls: 'ka-period-container' });
   const periods: [StatsPeriod, string][] = [['monthly', t('stats.period.monthly')], ['yearly', t('stats.period.yearly')]];

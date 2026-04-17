@@ -18,21 +18,21 @@ export interface Stats {
 
 export interface PeriodStats {
   label: string;
-  eingestellt: number;
-  verkauft: number;
-  umsatz: number;
-  portokosten: number;
-  gewinn: number;
+  listed: number;
+  sold: number;
+  revenue: number;
+  shippingCost: number;
+  profit: number;
 }
 
-function sumFinancials(listings: Listing[]): { umsatz: number; portokosten: number } {
-  let umsatz = 0;
-  let portokosten = 0;
+function sumFinancials(listings: Listing[]): { revenue: number; shippingCost: number } {
+  let revenue = 0;
+  let shippingCost = 0;
   for (const l of listings) {
-    if (l.verkauft_fuer != null) umsatz += l.verkauft_fuer;
-    if (l.porto_price != null) portokosten += l.porto_price;
+    if (l.sold_for != null) revenue += l.sold_for;
+    if (l.shipping_cost != null) shippingCost += l.shipping_cost;
   }
-  return { umsatz, portokosten };
+  return { revenue, shippingCost };
 }
 
 function calculatePeriodStats(
@@ -40,32 +40,32 @@ function calculatePeriodStats(
   keyLength: number,
   labelFn: (key: string) => string,
 ): PeriodStats[] {
-  const periods = new Map<string, { eingestellt: number; verkauft: Listing[] }>();
+  const periods = new Map<string, { listed: number; sold: Listing[] }>();
 
   for (const l of listings) {
-    if (l.eingestellt_am) {
-      const key = l.eingestellt_am.slice(0, keyLength);
-      if (!periods.has(key)) periods.set(key, { eingestellt: 0, verkauft: [] });
-      periods.get(key)!.eingestellt++;
+    if (l.listed_at) {
+      const key = l.listed_at.slice(0, keyLength);
+      if (!periods.has(key)) periods.set(key, { listed: 0, sold: [] });
+      periods.get(key)!.listed++;
     }
-    if (l.verkauft && l.verkauft_am) {
-      const key = l.verkauft_am.slice(0, keyLength);
-      if (!periods.has(key)) periods.set(key, { eingestellt: 0, verkauft: [] });
-      periods.get(key)!.verkauft.push(l);
+    if (l.sold && l.sold_at) {
+      const key = l.sold_at.slice(0, keyLength);
+      if (!periods.has(key)) periods.set(key, { listed: 0, sold: [] });
+      periods.get(key)!.sold.push(l);
     }
   }
 
   const sorted = [...periods.entries()].sort((a, b) => b[0].localeCompare(a[0]));
 
   return sorted.map(([key, data]) => {
-    const { umsatz, portokosten } = sumFinancials(data.verkauft);
+    const { revenue, shippingCost } = sumFinancials(data.sold);
     return {
       label: labelFn(key),
-      eingestellt: data.eingestellt,
-      verkauft: data.verkauft.length,
-      umsatz,
-      portokosten,
-      gewinn: umsatz - portokosten,
+      listed: data.listed,
+      sold: data.sold.length,
+      revenue,
+      shippingCost,
+      profit: revenue - shippingCost,
     };
   });
 }
@@ -90,14 +90,14 @@ export function calculateStats(listings: Listing[]): Stats {
         break;
     }
 
-    if (l.verkauft) totalSoldCount++;
+    if (l.sold) totalSoldCount++;
 
-    if (l.verkauft_fuer != null) {
-      totalRevenue += l.verkauft_fuer;
+    if (l.sold_for != null) {
+      totalRevenue += l.sold_for;
     }
 
-    if (l.porto_price != null && l.verkauft) {
-      totalShippingCost += l.porto_price;
+    if (l.shipping_cost != null && l.sold) {
+      totalShippingCost += l.shipping_cost;
     }
   }
 
@@ -116,9 +116,9 @@ export function calculateStats(listings: Listing[]): Stats {
 export function calculateExtendedStats(listings: Listing[]): ExtendedStats {
   const durations: number[] = [];
   for (const l of listings) {
-    if (l.verkauft && l.eingestellt_am && l.verkauft_am) {
-      const start = new Date(l.eingestellt_am).getTime();
-      const end = new Date(l.verkauft_am).getTime();
+    if (l.sold && l.listed_at && l.sold_at) {
+      const start = new Date(l.listed_at).getTime();
+      const end = new Date(l.sold_at).getTime();
       const days = (end - start) / (1000 * 60 * 60 * 24);
       if (!isNaN(days) && days >= 0) {
         durations.push(days);
@@ -130,8 +130,8 @@ export function calculateExtendedStats(listings: Listing[]): ExtendedStats {
     : null;
 
   const salePrices = listings
-    .filter(l => l.verkauft && l.verkauft_fuer != null)
-    .map(l => l.verkauft_fuer as number);
+    .filter(l => l.sold && l.sold_for != null)
+    .map(l => l.sold_for!);
   const avgSalePrice = salePrices.length > 0
     ? salePrices.reduce((a, b) => a + b, 0) / salePrices.length
     : null;

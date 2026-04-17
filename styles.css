@@ -108,10 +108,10 @@
   animation: ka-card-enter 250ms ease-out both;
 }
 
-/* Stats grid (stats tab — fixed 4-column layout) */
+/* Stats grid — auto-fits columns, min 120px each for narrow sidebars */
 .ka-stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -340,7 +340,6 @@
 
 .ka-search-input {
   width: 100%;
-  max-width: 400px;
   padding: 8px 14px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
@@ -995,30 +994,6 @@
   transform: none;
 }
 
-/* ka-test-btn shares the same style */
-.ka-test-btn {
-  cursor: pointer;
-  padding: 6px 16px;
-  border-radius: 16px;
-  border: none;
-  background: linear-gradient(135deg, var(--interactive-accent), var(--ka-accent-end));
-  color: var(--text-on-accent);
-  font-size: 0.85em;
-  font-weight: 600;
-  box-shadow: 0 2px 6px var(--ka-accent-shadow);
-  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
-}
-
-.ka-test-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 3px 10px var(--ka-accent-shadow);
-}
-
-.ka-test-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
 
 /* Destructive settings button — filled red */
 .ka-settings-btn-danger {

@@ -1,12 +1,12 @@
 import { Setting } from 'obsidian';
-import { CARRIERS, CARRIER_OPTIONS, PortoEntry } from '../models/listing';
+import { CARRIERS, CARRIER_SERVICES, ShippingService } from '../models/listing';
 import { formatCurrency } from './formatting';
 import { t } from '../i18n';
 
 export interface PortoState {
   carrier: string;
-  portoName: string | undefined;
-  portoPrice: number | undefined;
+  shippingService: string | undefined;
+  shippingCost: number | undefined;
 }
 
 export interface PortoUIOptions {
@@ -15,30 +15,28 @@ export interface PortoUIOptions {
   onChange?: (state: PortoState) => void;
   showTracking?: boolean;
   trackingState?: {
-    sendungsnummer: string;
-    labelErstellt: boolean;
-    onSendungsnummerChange: (v: string) => void;
+    trackingNumber: string;
+    labelPrinted: boolean;
+    onTrackingNumberChange: (v: string) => void;
     onLabelChange: (v: boolean) => void;
   };
 }
 
-/** Handle carrier change: reset porto fields, special-case Abholung. */
 function applyCarrierChange(state: PortoState, newCarrier: string, onChange?: (s: PortoState) => void): void {
   state.carrier = newCarrier;
-  state.portoName = undefined;
-  state.portoPrice = undefined;
-  if (newCarrier === 'Abholung') {
-    state.portoName = 'Abholung';
-    state.portoPrice = 0;
+  state.shippingService = undefined;
+  state.shippingCost = undefined;
+  if (newCarrier === 'Pickup') {
+    state.shippingService = 'Pickup';
+    state.shippingCost = 0;
   }
   onChange?.(state);
 }
 
-/** Render preset porto dropdown or free-text inputs for "Sonstiges". */
 function renderPortoSubFields(
   container: HTMLElement,
   state: PortoState,
-  presets: PortoEntry[] | undefined,
+  presets: ShippingService[] | undefined,
   onChange?: (s: PortoState) => void,
 ): void {
   if (presets) {
@@ -46,21 +44,21 @@ function renderPortoSubFields(
     for (const p of presets) {
       const label = `${p.name} (${formatCurrency(p.price)})`;
       const opt = portoSelect.createEl('option', { value: p.name, text: label });
-      if (state.portoName === p.name) opt.selected = true;
+      if (state.shippingService === p.name) opt.selected = true;
     }
-    const match = presets.find(p => p.name === state.portoName);
+    const match = presets.find(p => p.name === state.shippingService);
     if (match) {
       portoSelect.value = match.name;
-      state.portoPrice = match.price;
+      state.shippingCost = match.price;
     } else {
-      state.portoName = presets[0].name;
-      state.portoPrice = presets[0].price;
+      state.shippingService = presets[0].name;
+      state.shippingCost = presets[0].price;
     }
     portoSelect.addEventListener('change', () => {
       const matched = presets.find(p => p.name === portoSelect.value);
       if (matched) {
-        state.portoName = matched.name;
-        state.portoPrice = matched.price;
+        state.shippingService = matched.name;
+        state.shippingCost = matched.price;
         onChange?.(state);
       }
     });
@@ -71,9 +69,9 @@ function renderPortoSubFields(
       type: 'text',
       placeholder: t('porto.namePlaceholder'),
     });
-    if (state.portoName) nameInput.value = state.portoName;
+    if (state.shippingService) nameInput.value = state.shippingService;
     nameInput.addEventListener('input', () => {
-      state.portoName = nameInput.value || undefined;
+      state.shippingService = nameInput.value || undefined;
       onChange?.(state);
     });
 
@@ -82,19 +80,14 @@ function renderPortoSubFields(
       type: 'text',
       placeholder: t('porto.pricePlaceholder'),
     });
-    if (state.portoPrice != null) priceInput.value = state.portoPrice.toString();
+    if (state.shippingCost != null) priceInput.value = state.shippingCost.toString();
     priceInput.addEventListener('input', () => {
-      state.portoPrice = parseFloat(priceInput.value.replace(',', '.')) || 0;
+      state.shippingCost = parseFloat(priceInput.value.replace(',', '.')) || 0;
       onChange?.(state);
     });
   }
 }
 
-/**
- * Renders carrier + porto selection UI into a container.
- * Used by NewItemModal, EditListingModal, ShipModal.
- * State is mutated in-place; onChange is optional notification.
- */
 export function renderCarrierPortoUI(opts: PortoUIOptions): { rerender: () => void } {
   const { container, state, onChange } = opts;
 
@@ -109,34 +102,32 @@ export function renderCarrierPortoUI(opts: PortoUIOptions): { rerender: () => vo
 
   const portoContainer = wrapper.createDiv({ cls: 'ka-porto-sub-fields' });
   let trackingEls: HTMLElement[] = [];
-  // Anchor element: tracking settings are inserted before this so they stay
-  // above any elements added to the container after renderCarrierPortoUI returns (e.g. buttons).
   const trackingAnchor = container.createDiv();
 
   const updateFields = () => {
     portoContainer.empty();
     trackingEls.forEach(el => el.remove());
     trackingEls = [];
-    const isAbholung = state.carrier === 'Abholung';
+    const isPickup = state.carrier === 'Pickup';
 
-    if (!isAbholung) {
-      renderPortoSubFields(portoContainer, state, CARRIER_OPTIONS[state.carrier], onChange);
+    if (!isPickup) {
+      renderPortoSubFields(portoContainer, state, CARRIER_SERVICES[state.carrier], onChange);
     }
 
-    if (opts.showTracking && opts.trackingState && !isAbholung) {
+    if (opts.showTracking && opts.trackingState && !isPickup) {
       const snSetting = new Setting(container)
         .setName(t('porto.tracking'))
         .addText(text => text
           .setPlaceholder(t('porto.trackingPlaceholder'))
-          .setValue(opts.trackingState!.sendungsnummer)
-          .onChange(v => opts.trackingState!.onSendungsnummerChange(v)));
+          .setValue(opts.trackingState!.trackingNumber)
+          .onChange(v => opts.trackingState!.onTrackingNumberChange(v)));
       container.insertBefore(snSetting.settingEl, trackingAnchor);
       trackingEls.push(snSetting.settingEl);
 
       const labelSetting = new Setting(container)
         .setName(t('porto.labelPrinted'))
         .addToggle(toggle => toggle
-          .setValue(opts.trackingState!.labelErstellt)
+          .setValue(opts.trackingState!.labelPrinted)
           .onChange(v => opts.trackingState!.onLabelChange(v)));
       container.insertBefore(labelSetting.settingEl, trackingAnchor);
       trackingEls.push(labelSetting.settingEl);
@@ -158,9 +149,6 @@ export function renderCarrierPortoUI(opts: PortoUIOptions): { rerender: () => vo
   };
 }
 
-/**
- * Renders carrier + porto selection for the settings template editor.
- */
 export function renderCarrierPortoSettingsUI(
   container: HTMLElement,
   state: PortoState,
@@ -182,8 +170,8 @@ export function renderCarrierPortoSettingsUI(
   const renderSubFields = () => {
     portoContainer.empty();
     const carrier = carrierSelect.value;
-    if (!carrier || carrier === 'Abholung') return;
-    renderPortoSubFields(portoContainer, state, CARRIER_OPTIONS[carrier], onChange);
+    if (!carrier || carrier === 'Pickup') return;
+    renderPortoSubFields(portoContainer, state, CARRIER_SERVICES[carrier], onChange);
   };
 
   carrierSelect.addEventListener('change', () => {

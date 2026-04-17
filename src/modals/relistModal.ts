@@ -1,17 +1,17 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
-import { Listing } from '../models/listing';
+import { Listing, clearTransactionFields } from '../models/listing';
 import { todayString } from '../utils/formatting';
 import { t } from '../i18n';
 
 export class RelistModal extends Modal {
   private listing: Listing;
-  private preis: number;
+  private price: number;
   private onSubmit: (listing: Listing) => void;
 
   constructor(app: App, listing: Listing, onSubmit: (listing: Listing) => void) {
     super(app);
     this.listing = { ...listing };
-    this.preis = listing.preis;
+    this.price = listing.price;
     this.onSubmit = onSubmit;
   }
 
@@ -19,22 +19,22 @@ export class RelistModal extends Modal {
     const { contentEl } = this;
     contentEl.addClass('ka-modal');
 
-    contentEl.createEl('h2', { text: `${t('modal.relist.title')} — ${this.listing.artikel}` });
+    contentEl.createEl('h2', { text: `${t('modal.relist.title')} — ${this.listing.title}` });
 
     new Setting(contentEl)
       .setName(t('modal.relist.field.price'))
-      .setDesc(t('modal.relist.field.priceDesc', { price: this.listing.preis }))
+      .setDesc(t('modal.relist.field.priceDesc', { price: this.listing.price }))
       .addText(text => text
-        .setValue(this.preis.toString())
-        .onChange(v => this.preis = parseFloat(v) || 0));
+        .setValue(this.price.toString())
+        .onChange(v => this.price = parseFloat(v) || 0));
 
-    if (this.listing.beschreibung) {
+    if (this.listing.description) {
       new Setting(contentEl)
         .setName(t('modal.relist.field.description'))
         .setDesc(t('modal.relist.field.descriptionDesc'));
 
       const descBox = contentEl.createDiv({ cls: 'ka-desc-box' });
-      descBox.setText(this.listing.beschreibung);
+      descBox.setText(this.listing.description);
     }
 
     new Setting(contentEl)
@@ -42,25 +42,15 @@ export class RelistModal extends Modal {
         .setButtonText(t('modal.relist.submit'))
         .setCta()
         .onClick(() => {
-          if (this.preis <= 0) { new Notice(t('notice.validation.priceRequired')); return; }
+          if (this.price <= 0) { new Notice(t('notice.validation.priceRequired')); return; }
 
-          this.listing.status = 'active';
-          this.listing.preis = this.preis;
-          this.listing.eingestellt_am = todayString();
-          this.listing.eingestellt_count += 1;
-
-          // Reset sale/shipping fields
-          this.listing.verkauft = false;
-          this.listing.verkauft_am = undefined;
-          this.listing.verkauft_fuer = undefined;
-          this.listing.bezahlt = false;
-          this.listing.bezahlt_am = undefined;
-          this.listing.bezahlart = undefined;
-          this.listing.verschickt = false;
-          this.listing.verschickt_am = undefined;
-          this.listing.anschrift = undefined;
-          this.listing.sendungsnummer = undefined;
-          this.listing.label_erstellt = false;
+          this.listing = clearTransactionFields({
+            ...this.listing,
+            status: 'active',
+            price: this.price,
+            listed_at: todayString(),
+            listing_count: this.listing.listing_count + 1,
+          });
 
           this.onSubmit(this.listing);
           this.close();

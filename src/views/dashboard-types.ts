@@ -3,7 +3,7 @@ import type { Listing, Status } from '../models/listing';
 export type FilterStatus = 'all' | 'archive' | Status;
 export type Tab = 'overview' | 'stats';
 export type StatsPeriod = 'monthly' | 'yearly';
-export type SortColumn = 'artikel' | 'preis' | 'versand' | 'eingestellt' | 'status';
+export type SortColumn = 'title' | 'price' | 'shipping' | 'listed' | 'status';
 export type SortDirection = 'asc' | 'desc';
 
 export interface DashboardCallbacks {

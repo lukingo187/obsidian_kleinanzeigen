@@ -1,5 +1,5 @@
 import { App, FuzzySuggestModal, Modal, Notice, PluginSettingTab, Setting, TFolder, setIcon } from 'obsidian';
-import { AIProvider, DEFAULT_MODELS, DEFAULT_USAGE, ZUSTAND_OPTIONS, Zustand, Preisart, ArticleTemplate, DESCRIPTION_STYLES, DescriptionStyle, isZustand, isPreisart, isCarrierName } from '../models/listing';
+import { AIProvider, DEFAULT_MODELS, DEFAULT_USAGE, CONDITIONS, Condition, PriceType, ListingTemplate, DESCRIPTION_STYLES, DescriptionStyle, isCondition, isPriceType, isCarrierName, isAIProvider, isDescriptionStyle } from '../models/listing';
 import { addUsageCard } from './dashboard-helpers';
 import { renderCarrierPortoSettingsUI } from '../utils/portoUI';
 import { AIService } from '../services/aiService';
@@ -37,12 +37,12 @@ class FolderSuggestModal extends FuzzySuggestModal<TFolder> {
 }
 
 class TemplateFormModal extends Modal {
-  private tpl: ArticleTemplate;
+  private tpl: ListingTemplate;
 
   constructor(
     app: App,
-    initialTpl: ArticleTemplate,
-    private onSave: (tpl: ArticleTemplate) => Promise<void>,
+    initialTpl: ListingTemplate,
+    private onSave: (tpl: ListingTemplate) => Promise<void>,
   ) {
     super(app);
     this.tpl = { ...initialTpl };
@@ -60,7 +60,7 @@ class TemplateFormModal extends Modal {
     new Setting(contentEl)
       .setName(t('settings.templates.field.name'))
       .addText(text => {
-        text.setPlaceholder('z.B. PS4 Spiel');
+        text.setPlaceholder(t('settings.templates.field.namePlaceholder'));
         text.setValue(this.tpl.name);
         text.onChange(v => { this.tpl.name = v; });
       });
@@ -69,18 +69,18 @@ class TemplateFormModal extends Modal {
       .setName(t('settings.templates.field.item'))
       .addText(text => {
         text.setPlaceholder(t('settings.templates.field.itemPlaceholder'));
-        text.setValue(this.tpl.artikel ?? '');
-        text.onChange(v => { this.tpl.artikel = v || undefined; });
+        text.setValue(this.tpl.title ?? '');
+        text.onChange(v => { this.tpl.title = v || undefined; });
       });
 
     new Setting(contentEl)
       .setName(t('settings.templates.field.price'))
       .addText(text => {
         text.setPlaceholder('0.00');
-        text.setValue(this.tpl.preis?.toString() ?? '');
+        text.setValue(this.tpl.price?.toString() ?? '');
         text.onChange(v => {
           const val = parseFloat(v);
-          this.tpl.preis = !isNaN(val) && val > 0 ? val : undefined;
+          this.tpl.price = !isNaN(val) && val > 0 ? val : undefined;
         });
         text.inputEl.type = 'number';
       });
@@ -89,32 +89,32 @@ class TemplateFormModal extends Modal {
       .setName(t('settings.templates.field.condition'))
       .addDropdown(dd => {
         dd.addOption('', t('common.any'));
-        for (const z of ZUSTAND_OPTIONS) {
-          dd.addOption(z, t(`zustand.${z}` as StringKey));
+        for (const c of CONDITIONS) {
+          dd.addOption(c, t(`condition.${c}` as StringKey));
         }
-        dd.setValue(this.tpl.zustand ?? '');
-        dd.onChange(v => { this.tpl.zustand = isZustand(v) ? v : undefined; });
+        dd.setValue(this.tpl.condition ?? '');
+        dd.onChange(v => { this.tpl.condition = isCondition(v) ? v : undefined; });
       });
 
     new Setting(contentEl)
       .setName(t('settings.templates.field.preisart'))
       .addDropdown(dd => {
         dd.addOption('', t('common.any'));
-        dd.addOption('negotiable', t('preisart.negotiable'));
-        dd.addOption('fixed', t('preisart.fixed'));
-        dd.setValue(this.tpl.preisart ?? '');
-        dd.onChange(v => { this.tpl.preisart = isPreisart(v) ? v : undefined; });
+        dd.addOption('negotiable', t('price_type.negotiable'));
+        dd.addOption('fixed', t('price_type.fixed'));
+        dd.setValue(this.tpl.price_type ?? '');
+        dd.onChange(v => { this.tpl.price_type = isPriceType(v) ? v : undefined; });
       });
 
     const portoSetting = new Setting(contentEl).setName(t('settings.templates.field.shipping'));
     const portoContainer = portoSetting.controlEl.createDiv();
     renderCarrierPortoSettingsUI(
       portoContainer,
-      { carrier: this.tpl.carrier ?? '', portoName: this.tpl.porto_name, portoPrice: this.tpl.porto_price },
+      { carrier: this.tpl.carrier ?? '', shippingService: this.tpl.shipping_service, shippingCost: this.tpl.shipping_cost },
       (state) => {
         this.tpl.carrier = isCarrierName(state.carrier) ? state.carrier : undefined;
-        this.tpl.porto_name = state.portoName;
-        this.tpl.porto_price = state.portoPrice;
+        this.tpl.shipping_service = state.shippingService;
+        this.tpl.shipping_cost = state.shippingCost;
       },
       { allowEmpty: true },
     );
@@ -123,8 +123,8 @@ class TemplateFormModal extends Modal {
       .setName(t('settings.templates.field.description'))
       .addTextArea(ta => {
         ta.setPlaceholder(t('settings.templates.field.descPlaceholder'));
-        ta.setValue(this.tpl.beschreibungsvorlage ?? '');
-        ta.onChange(v => { this.tpl.beschreibungsvorlage = v || undefined; });
+        ta.setValue(this.tpl.description_template ?? '');
+        ta.onChange(v => { this.tpl.description_template = v || undefined; });
         ta.inputEl.rows = 4;
       });
 
@@ -172,16 +172,12 @@ export class SettingsTab extends PluginSettingTab {
     this.renderPlatformsSection(containerEl);
   }
 
-  // ── Section header helper ────────────────────────────────
-
   private sectionHeader(container: HTMLElement, icon: string, title: string) {
     const header = container.createDiv({ cls: 'ka-settings-section-header' });
     const iconEl = header.createSpan({ cls: 'ka-section-icon' });
     setIcon(iconEl, icon);
     header.createSpan({ text: title });
   }
-
-  // ── Language ──────────────────────────────────────────────
 
   private renderLanguageSection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
@@ -204,8 +200,6 @@ export class SettingsTab extends PluginSettingTab {
         });
       });
   }
-
-  // ── General ──────────────────────────────────────────────
 
   private renderGeneralSection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
@@ -236,8 +230,6 @@ export class SettingsTab extends PluginSettingTab {
         }));
   }
 
-  // ── AI Configuration ─────────────────────────────────────
-
   private renderAISection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
     this.sectionHeader(containerEl, 'bot', t('settings.section.ai'));
@@ -257,7 +249,7 @@ export class SettingsTab extends PluginSettingTab {
         }
         dd.setValue(settings.aiProvider);
         dd.onChange(async (value) => {
-          if (value !== 'anthropic' && value !== 'openai' && value !== 'google') return;
+          if (!isAIProvider(value)) return;
           settings.aiProvider = value;
           await this.plugin.saveSettings();
           this.display();
@@ -315,12 +307,11 @@ export class SettingsTab extends PluginSettingTab {
       setIcon(toggleVis, isPassword ? 'eye-off' : 'eye');
     });
 
-    // Warning + test on one row
     const keyMeta = containerEl.createDiv({ cls: 'ka-api-key-meta' });
     keyMeta.createDiv({ cls: 'ka-api-key-warning', text: t('settings.ai.keyWarning') });
 
     const testRow = keyMeta.createDiv({ cls: 'ka-api-test-row' });
-    const testBtn = testRow.createEl('button', { text: t('settings.ai.test'), cls: 'ka-test-btn' });
+    const testBtn = testRow.createEl('button', { text: t('settings.ai.test'), cls: 'ka-settings-btn' });
     const testResult = testRow.createSpan({ cls: 'ka-test-result' });
 
     testBtn.addEventListener('click', async () => {
@@ -357,8 +348,6 @@ export class SettingsTab extends PluginSettingTab {
     return placeholders[this.plugin.settings.aiProvider];
   }
 
-  // ── Description (style + footer combined) ────────────────
-
   private renderDescriptionSection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
     this.sectionHeader(containerEl, 'text', t('settings.section.style'));
@@ -372,8 +361,8 @@ export class SettingsTab extends PluginSettingTab {
         }
         dd.setValue(settings.descriptionStyle);
         dd.onChange(async (value) => {
-          if (!DESCRIPTION_STYLES.some(s => s.id === value)) return;
-          settings.descriptionStyle = value as DescriptionStyle;
+          if (!isDescriptionStyle(value)) return;
+          settings.descriptionStyle = value;
           await this.plugin.saveSettings();
           this.display();
         });
@@ -394,6 +383,8 @@ export class SettingsTab extends PluginSettingTab {
         });
     }
 
+    this.sectionHeader(containerEl, 'align-left', t('settings.section.footer'));
+
     new Setting(containerEl)
       .setName(t('settings.footer.label'))
       .setDesc(t('settings.footer.desc'))
@@ -407,8 +398,6 @@ export class SettingsTab extends PluginSettingTab {
         ta.inputEl.rows = 3;
       });
   }
-
-  // ── AI Usage ─────────────────────────────────────────────
 
   private renderAIUsageSection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
@@ -452,8 +441,6 @@ export class SettingsTab extends PluginSettingTab {
     }
   }
 
-  // ── Templates ────────────────────────────────────────────
-
   private renderTemplatesSection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
     this.sectionHeader(containerEl, 'layout-template', t('settings.section.templates'));
@@ -465,11 +452,11 @@ export class SettingsTab extends PluginSettingTab {
 
     for (const tpl of settings.templates) {
       const meta: string[] = [];
-      if (tpl.artikel) meta.push(tpl.artikel);
-      if (tpl.preis) meta.push(`${tpl.preis}€`);
-      if (tpl.zustand) meta.push(t(`zustand.${tpl.zustand}` as StringKey));
+      if (tpl.title) meta.push(tpl.title);
+      if (tpl.price) meta.push(`${tpl.price}€`);
+      if (tpl.condition) meta.push(t(`condition.${tpl.condition}` as StringKey));
       if (tpl.carrier) meta.push(tpl.carrier);
-      if (tpl.preisart) meta.push(t(`preisart.${tpl.preisart}` as StringKey));
+      if (tpl.price_type) meta.push(t(`price_type.${tpl.price_type}` as StringKey));
 
       new Setting(containerEl)
         .setName(tpl.name)
@@ -499,7 +486,7 @@ export class SettingsTab extends PluginSettingTab {
     }).addEventListener('click', () => this.openTemplateModal({ id: '', name: '' }));
   }
 
-  private openTemplateModal(initialTpl: ArticleTemplate) {
+  private openTemplateModal(initialTpl: ListingTemplate) {
     const settings = this.plugin.settings;
     const isNew = initialTpl.id === '';
 
@@ -507,14 +494,14 @@ export class SettingsTab extends PluginSettingTab {
       if (isNew) {
         settings.templates = createTemplate(settings.templates, {
           name: saved.name,
-          artikel: saved.artikel,
-          preis: saved.preis,
-          zustand: saved.zustand,
-          preisart: saved.preisart,
+          title: saved.title,
+          price: saved.price,
+          condition: saved.condition,
+          price_type: saved.price_type,
           carrier: saved.carrier,
-          porto_name: saved.porto_name,
-          porto_price: saved.porto_price,
-          beschreibungsvorlage: saved.beschreibungsvorlage,
+          shipping_service: saved.shipping_service,
+          shipping_cost: saved.shipping_cost,
+          description_template: saved.description_template,
         });
       } else {
         settings.templates = updateTemplate(settings.templates, saved);
@@ -523,8 +510,6 @@ export class SettingsTab extends PluginSettingTab {
       this.display();
     }).open();
   }
-
-  // ── Platforms ─────────────────────────────────────────────
 
   private renderPlatformsSection(containerEl: HTMLElement): void {
     this.sectionHeader(containerEl, 'store', t('settings.section.platforms'));

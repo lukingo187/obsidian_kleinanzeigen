@@ -1,6 +1,7 @@
 import { ItemView, Notice, WorkspaceLeaf, setIcon } from 'obsidian';
 import { Listing, Status, buildUndoListing } from '../models/listing';
 import { t } from '../i18n';
+import { formatError } from '../utils/formatting';
 import { VaultService } from '../services/vaultService';
 import type KleinanzeigenPlugin from '../main';
 import type { Tab, DashboardCallbacks, OverviewState, StatsState, DropdownState, DashboardActions } from './dashboard-types';
@@ -22,7 +23,7 @@ export class DashboardView extends ItemView {
     filter: 'all',
     searchQuery: '',
     expandedListing: null,
-    sortColumn: 'eingestellt',
+    sortColumn: 'listed',
     sortDirection: 'desc',
     selectedPaths: new Set(),
   };
@@ -198,7 +199,7 @@ export class DashboardView extends ItemView {
       await this.vaultService.updateListing({ ...listing, status });
       this.refreshAfterWrite();
     } catch (e) {
-      new Notice(t('notice.statusError', { error: e instanceof Error ? e.message : String(e) }));
+      new Notice(t('notice.statusError', { error: formatError(e) }));
     }
   }
 
@@ -207,13 +208,17 @@ export class DashboardView extends ItemView {
       await this.vaultService.updateListing(buildUndoListing(listing, targetStatus));
       this.refreshAfterWrite();
     } catch (e) {
-      new Notice(t('notice.undoError', { error: e instanceof Error ? e.message : String(e) }));
+      new Notice(t('notice.undoError', { error: formatError(e) }));
     }
   }
 
   private async deleteListing(listing: Listing) {
-    await this.vaultService.deleteListing(listing);
-    this.refreshAfterWrite();
+    try {
+      await this.vaultService.deleteListing(listing);
+      this.refreshAfterWrite();
+    } catch (e) {
+      new Notice(t('notice.deleteError', { error: formatError(e) }));
+    }
   }
 
 }

@@ -7,17 +7,17 @@ export const de = {
   'status.expired':   'Abgelaufen',
   'status.archived':  'Archiviert',
 
-  // ── Zustand display values ───────────────────────────────
-  'zustand.new_with_tag': 'Neu mit Etikett',
-  'zustand.new':          'Neu',
-  'zustand.like_new':     'Sehr Gut',
-  'zustand.ok':           'Gut',
-  'zustand.alright':      'In Ordnung',
-  'zustand.defect':       'Defekt',
+  // ── Condition display values ─────────────────────────────
+  'condition.new_with_tag': 'Neu mit Etikett',
+  'condition.new':          'Neu',
+  'condition.like_new':     'Sehr Gut',
+  'condition.ok':           'Gut',
+  'condition.alright':      'In Ordnung',
+  'condition.defect':       'Defekt',
 
-  // ── Preisart display values ──────────────────────────────
-  'preisart.negotiable': 'VB',
-  'preisart.fixed':      'Festpreis',
+  // ── Price type display values ────────────────────────────
+  'price_type.negotiable': 'VB',
+  'price_type.fixed':      'Festpreis',
 
   // ── Common ───────────────────────────────────────────────
   'common.save':     'Speichern',
@@ -239,6 +239,7 @@ export const de = {
   'settings.templates.editTitle':    'Template bearbeiten',
   'settings.templates.createTitle':  'Neues Template',
   'settings.templates.field.name':        'Template-Name *',
+  'settings.templates.field.namePlaceholder': 'z.B. PS4 Spiel',
   'settings.templates.field.item':        'Artikelname',
   'settings.templates.field.itemPlaceholder': 'Vordefinierter Artikelname',
   'settings.templates.field.price':       'Preis (€)',
@@ -262,6 +263,7 @@ export const de = {
   'notice.refreshError':        'Fehler beim Laden der Artikel.',
   'notice.statusError':         'Fehler beim Statuswechsel: {error}',
   'notice.undoError':           'Fehler beim Rückgängig machen: {error}',
+  'notice.deleteError':         'Fehler beim Löschen: {error}',
   'notice.loadError':           'Einstellungen konnten nicht geladen werden. Standardwerte werden verwendet.',
   'notice.export.csv':          'CSV exportiert: {count} Artikel',
   'notice.export.pdf':          'PDF exportiert: {count} Artikel',
@@ -288,17 +290,17 @@ export const en: Record<keyof typeof de, string> = {
   'status.expired':   'Expired',
   'status.archived':  'Archived',
 
-  // ── Zustand ──────────────────────────────────────────────
-  'zustand.new_with_tag': 'New with tag',
-  'zustand.new':          'New',
-  'zustand.like_new':     'Like New',
-  'zustand.ok':           'Good',
-  'zustand.alright':      'Acceptable',
-  'zustand.defect':       'Defective',
+  // ── Condition ────────────────────────────────────────────
+  'condition.new_with_tag': 'New with tag',
+  'condition.new':          'New',
+  'condition.like_new':     'Like New',
+  'condition.ok':           'Good',
+  'condition.alright':      'Acceptable',
+  'condition.defect':       'Defective',
 
-  // ── Preisart ─────────────────────────────────────────────
-  'preisart.negotiable': 'Negotiable',
-  'preisart.fixed':      'Fixed price',
+  // ── Price type ───────────────────────────────────────────
+  'price_type.negotiable': 'Negotiable',
+  'price_type.fixed':      'Fixed price',
 
   // ── Common ───────────────────────────────────────────────
   'common.save':    'Save',
@@ -520,6 +522,7 @@ export const en: Record<keyof typeof de, string> = {
   'settings.templates.editTitle':    'Edit template',
   'settings.templates.createTitle':  'New template',
   'settings.templates.field.name':        'Template name *',
+  'settings.templates.field.namePlaceholder': 'e.g. PS4 Game',
   'settings.templates.field.item':        'Item name',
   'settings.templates.field.itemPlaceholder': 'Predefined item name',
   'settings.templates.field.price':       'Price (€)',
@@ -543,6 +546,7 @@ export const en: Record<keyof typeof de, string> = {
   'notice.refreshError':        'Failed to load items.',
   'notice.statusError':         'Failed to update status: {error}',
   'notice.undoError':           'Failed to undo: {error}',
+  'notice.deleteError':         'Error deleting item: {error}',
   'notice.loadError':           'Could not load settings. Using defaults.',
   'notice.export.csv':          'CSV exported: {count} items',
   'notice.export.pdf':          'PDF exported: {count} items',

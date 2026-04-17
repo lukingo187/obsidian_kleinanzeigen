@@ -21,6 +21,10 @@ export function todayString(): string {
   return formatDate(new Date());
 }
 
+export function formatError(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
 export function formatPortoDisplay(
   carrier?: string,
   portoName?: string,

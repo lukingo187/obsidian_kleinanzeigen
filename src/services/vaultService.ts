@@ -1,5 +1,5 @@
 import { App, TFile, TFolder, normalizePath, parseYaml } from 'obsidian';
-import { Listing, isZustand, isPreisart, isStatus, isCarrierName, isBezahlart } from '../models/listing';
+import { Listing, isCondition, isPriceType, isStatus, isPaymentMethod, isCarrierName } from '../models/listing';
 
 export class VaultService {
   private getBaseFolder: () => string;
@@ -22,7 +22,7 @@ export class VaultService {
     await this.ensureFolder();
 
     const base = this.getBaseFolder();
-    const safeName = listing.artikel.replace(/[\\/:*?"<>|]/g, '_');
+    const safeName = listing.title.replace(/[\\/:*?"<>|]/g, '_');
     let filePath = normalizePath(`${base}/${safeName}.md`);
 
     let counter = 1;
@@ -99,30 +99,30 @@ export class VaultService {
     if (!fm) return null;
 
     return {
-      artikel: fm.artikel ?? file.basename,
-      beschreibung: fm.beschreibung,
-      zustand: isZustand(fm.zustand) ? fm.zustand : 'ok',
-      status: isStatus(fm.status) ? fm.status : 'active',
-      preis: Number(fm.preis) || 0,
-      preisart: isPreisart(fm.preisart) ? fm.preisart : 'negotiable',
-      verkauft_fuer: fm.verkauft_fuer,
-      eingestellt_am: fm.eingestellt_am ?? '',
-      erstmals_eingestellt_am: fm.erstmals_eingestellt_am ?? '',
-      eingestellt_count: fm.eingestellt_count ?? 1,
-      verkauft: fm.verkauft ?? false,
-      verkauft_am: fm.verkauft_am,
-      bezahlt: fm.bezahlt ?? false,
-      bezahlt_am: fm.bezahlt_am,
-      bezahlart: isBezahlart(fm.bezahlart) ? fm.bezahlart : undefined,
-      carrier: isCarrierName(fm.carrier) ? fm.carrier : undefined,
-      porto_name: fm.porto_name,
-      porto_price: fm.porto_price != null ? Number(fm.porto_price) : undefined,
-      anschrift: fm.anschrift,
-      label_erstellt: fm.label_erstellt ?? false,
-      sendungsnummer: fm.sendungsnummer != null ? String(fm.sendungsnummer) : undefined,
-      verschickt: fm.verschickt ?? false,
-      verschickt_am: fm.verschickt_am,
-      filePath: file.path,
+      title:            fm.title ?? file.basename,
+      description:      fm.description,
+      condition:        isCondition(fm.condition) ? fm.condition : 'ok',
+      status:           isStatus(fm.status) ? fm.status : 'active',
+      price:            Number(fm.price) || 0,
+      price_type:       isPriceType(fm.price_type) ? fm.price_type : 'negotiable',
+      sold_for:         fm.sold_for,
+      listed_at:        fm.listed_at ?? '',
+      first_listed_at:  fm.first_listed_at ?? '',
+      listing_count:    fm.listing_count ?? 1,
+      sold:             fm.sold ?? false,
+      sold_at:          fm.sold_at,
+      paid:             fm.paid ?? false,
+      paid_at:          fm.paid_at,
+      payment_method:   isPaymentMethod(fm.payment_method) ? fm.payment_method : undefined,
+      carrier:          isCarrierName(fm.carrier) ? fm.carrier : undefined,
+      shipping_service: fm.shipping_service,
+      shipping_cost:    fm.shipping_cost != null ? Number(fm.shipping_cost) : undefined,
+      shipping_address: fm.shipping_address,
+      label_printed:    fm.label_printed ?? false,
+      tracking_number:  fm.tracking_number != null ? String(fm.tracking_number) : undefined,
+      shipped:          fm.shipped ?? false,
+      shipped_at:       fm.shipped_at,
+      filePath:         file.path,
     };
   }
 
@@ -140,44 +140,44 @@ export class VaultService {
   private buildFileContent(listing: Listing): string {
     const lines: string[] = ['---'];
 
-    lines.push(`artikel: "${listing.artikel}"`);
-    lines.push(`zustand: "${listing.zustand}"`);
+    lines.push(`title: "${listing.title}"`);
+    lines.push(`condition: "${listing.condition}"`);
     lines.push(`status: "${listing.status}"`);
-    lines.push(`preis: ${listing.preis}`);
-    lines.push(`preisart: "${listing.preisart}"`);
+    lines.push(`price: ${listing.price}`);
+    lines.push(`price_type: "${listing.price_type}"`);
 
-    if (listing.verkauft_fuer != null) lines.push(`verkauft_fuer: ${listing.verkauft_fuer}`);
+    if (listing.sold_for != null) lines.push(`sold_for: ${listing.sold_for}`);
 
-    lines.push(`eingestellt_am: "${listing.eingestellt_am}"`);
-    lines.push(`erstmals_eingestellt_am: "${listing.erstmals_eingestellt_am}"`);
-    lines.push(`eingestellt_count: ${listing.eingestellt_count}`);
+    lines.push(`listed_at: "${listing.listed_at}"`);
+    lines.push(`first_listed_at: "${listing.first_listed_at}"`);
+    lines.push(`listing_count: ${listing.listing_count}`);
 
-    lines.push(`verkauft: ${listing.verkauft}`);
-    if (listing.verkauft_am) lines.push(`verkauft_am: "${listing.verkauft_am}"`);
+    lines.push(`sold: ${listing.sold}`);
+    if (listing.sold_at) lines.push(`sold_at: "${listing.sold_at}"`);
 
-    lines.push(`bezahlt: ${listing.bezahlt}`);
-    if (listing.bezahlt_am) lines.push(`bezahlt_am: "${listing.bezahlt_am}"`);
-    if (listing.bezahlart) lines.push(`bezahlart: "${listing.bezahlart}"`);
+    lines.push(`paid: ${listing.paid}`);
+    if (listing.paid_at) lines.push(`paid_at: "${listing.paid_at}"`);
+    if (listing.payment_method) lines.push(`payment_method: "${listing.payment_method}"`);
 
     if (listing.carrier) lines.push(`carrier: "${listing.carrier}"`);
-    if (listing.porto_name) lines.push(`porto_name: "${listing.porto_name}"`);
-    if (listing.porto_price != null) lines.push(`porto_price: ${listing.porto_price}`);
-    if (listing.anschrift) lines.push(`anschrift: "${listing.anschrift.replace(/\n/g, '\\n')}"`);
-    lines.push(`label_erstellt: ${listing.label_erstellt}`);
-    if (listing.sendungsnummer) lines.push(`sendungsnummer: "${listing.sendungsnummer}"`);
-    lines.push(`verschickt: ${listing.verschickt}`);
-    if (listing.verschickt_am) lines.push(`verschickt_am: "${listing.verschickt_am}"`);
+    if (listing.shipping_service) lines.push(`shipping_service: "${listing.shipping_service}"`);
+    if (listing.shipping_cost != null) lines.push(`shipping_cost: ${listing.shipping_cost}`);
+    if (listing.shipping_address) lines.push(`shipping_address: "${listing.shipping_address.replace(/\n/g, '\\n')}"`);
+    lines.push(`label_printed: ${listing.label_printed}`);
+    if (listing.tracking_number) lines.push(`tracking_number: "${listing.tracking_number}"`);
+    lines.push(`shipped: ${listing.shipped}`);
+    if (listing.shipped_at) lines.push(`shipped_at: "${listing.shipped_at}"`);
 
-    if (listing.beschreibung) {
-      const indented = listing.beschreibung.split('\n').map(l => `  ${l}`).join('\n');
-      lines.push(`beschreibung: |\n${indented}`);
+    if (listing.description) {
+      const indented = listing.description.split('\n').map(l => `  ${l}`).join('\n');
+      lines.push(`description: |\n${indented}`);
     }
 
     lines.push('---');
     lines.push('');
 
-    if (listing.beschreibung) {
-      lines.push(listing.beschreibung);
+    if (listing.description) {
+      lines.push(listing.description);
     }
 
     return lines.join('\n');

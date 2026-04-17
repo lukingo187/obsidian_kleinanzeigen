@@ -1,5 +1,5 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
-import { Listing, ZUSTAND_OPTIONS, Zustand, Preisart, DEFAULT_CARRIER, isZustand, isPreisart, isCarrierName } from '../models/listing';
+import { Listing, CONDITIONS, Condition, PriceType, DEFAULT_CARRIER, isCondition, isPriceType, isCarrierName } from '../models/listing';
 import { t } from '../i18n';
 import { todayString } from '../utils/formatting';
 import { PortoState, renderCarrierPortoUI } from '../utils/portoUI';
@@ -8,22 +8,21 @@ import type KleinanzeigenPlugin from '../main';
 type Mode = 'manual' | 'ai' | 'template';
 
 export class NewItemModal extends Modal {
-  private artikel = '';
-  private zustand: Zustand = 'ok';
-  private preis = 0;
-  private preisart: Preisart = 'negotiable';
-  private portoState: PortoState = { carrier: DEFAULT_CARRIER, portoName: undefined, portoPrice: undefined };
-  private beschreibung = '';
+  private title = '';
+  private condition: Condition = 'ok';
+  private price = 0;
+  private priceType: PriceType = 'negotiable';
+  private portoState: PortoState = { carrier: DEFAULT_CARRIER, shippingService: undefined, shippingCost: undefined };
+  private description = '';
   private mode: Mode;
   private onSubmit: (listing: Listing) => void;
   private plugin: KleinanzeigenPlugin;
 
-  // References to form elements for AI/template pre-fill
   private fieldsContainer!: HTMLElement;
-  private artikelInput!: HTMLInputElement;
-  private preisInput!: HTMLInputElement;
-  private zustandSelect!: HTMLSelectElement;
-  private preisartSelect!: HTMLSelectElement;
+  private titleInput!: HTMLInputElement;
+  private priceInput!: HTMLInputElement;
+  private conditionSelect!: HTMLSelectElement;
+  private priceTypeSelect!: HTMLSelectElement;
   private portoRerender!: () => void;
   private descTextArea!: HTMLTextAreaElement;
 
@@ -133,24 +132,24 @@ export class NewItemModal extends Modal {
         const aiService = this.plugin.createAIService();
         const parsed = await aiService.parseFreeformInput(text);
 
-        this.artikel = parsed.artikel;
-        this.artikelInput.value = parsed.artikel;
+        this.title = parsed.title;
+        this.titleInput.value = parsed.title;
 
-        const matchedZustand = ZUSTAND_OPTIONS.find(z => z === parsed.zustand);
-        if (matchedZustand) {
-          this.zustand = matchedZustand;
-          this.zustandSelect.value = matchedZustand;
+        const matchedCondition = CONDITIONS.find(c => c === parsed.condition);
+        if (matchedCondition) {
+          this.condition = matchedCondition;
+          this.conditionSelect.value = matchedCondition;
         }
 
         if (parsed.carrier) {
           this.portoState.carrier = parsed.carrier;
-          this.portoState.portoName = parsed.porto_name;
-          this.portoState.portoPrice = parsed.porto_price;
+          this.portoState.shippingService = parsed.shippingService;
+          this.portoState.shippingCost = parsed.shippingCost;
           this.portoRerender();
         }
 
-        this.beschreibung = parsed.beschreibung;
-        this.descTextArea.value = parsed.beschreibung;
+        this.description = parsed.description;
+        this.descTextArea.value = parsed.description;
 
         if (this.fieldsContainer.style.display === 'none') {
           this.revealFields(this.fieldsContainer, t('modal.newItem.ai.filled'));
@@ -187,19 +186,19 @@ export class NewItemModal extends Modal {
       const selected = templates.find(t => t.id === select.value);
       if (!selected) return;
 
-      if (selected.artikel) { this.artikel = selected.artikel; this.artikelInput.value = selected.artikel; }
-      if (selected.preis) { this.preis = selected.preis; this.preisInput.value = selected.preis.toString(); }
-      if (selected.zustand) { this.zustand = selected.zustand; this.zustandSelect.value = selected.zustand; }
-      if (selected.preisart) { this.preisart = selected.preisart; this.preisartSelect.value = selected.preisart; }
+      if (selected.title) { this.title = selected.title; this.titleInput.value = selected.title; }
+      if (selected.price) { this.price = selected.price; this.priceInput.value = selected.price.toString(); }
+      if (selected.condition) { this.condition = selected.condition; this.conditionSelect.value = selected.condition; }
+      if (selected.price_type) { this.priceType = selected.price_type; this.priceTypeSelect.value = selected.price_type; }
       if (selected.carrier) {
         this.portoState.carrier = selected.carrier;
-        this.portoState.portoName = selected.porto_name;
-        this.portoState.portoPrice = selected.porto_price;
+        this.portoState.shippingService = selected.shipping_service;
+        this.portoState.shippingCost = selected.shipping_cost;
         this.portoRerender();
       }
-      if (selected.beschreibungsvorlage) {
-        this.beschreibung = selected.beschreibungsvorlage;
-        this.descTextArea.value = selected.beschreibungsvorlage;
+      if (selected.description_template) {
+        this.description = selected.description_template;
+        this.descTextArea.value = selected.description_template;
       }
 
       new Notice(t('modal.newItem.template.applied', { name: selected.name }));
@@ -211,35 +210,35 @@ export class NewItemModal extends Modal {
       .setName(t('modal.newItem.field.name'))
       .addText(text => {
         text.setPlaceholder(t('modal.newItem.field.namePlaceholder'));
-        text.setValue(this.artikel);
-        text.onChange(v => this.artikel = v);
+        text.setValue(this.title);
+        text.onChange(v => this.title = v);
         text.inputEl.addClass('ka-artikel-input');
-        this.artikelInput = text.inputEl;
+        this.titleInput = text.inputEl;
       });
 
     new Setting(container)
       .setName(t('modal.newItem.field.price'))
       .addText(text => {
         text.setPlaceholder(t('modal.newItem.field.pricePlaceholder'));
-        text.setValue(this.preis > 0 ? this.preis.toString() : '');
-        text.onChange(v => this.preis = parseFloat(v) || 0);
-        this.preisInput = text.inputEl;
+        text.setValue(this.price > 0 ? this.price.toString() : '');
+        text.onChange(v => this.price = parseFloat(v) || 0);
+        this.priceInput = text.inputEl;
       })
       .addDropdown(dd => {
-        dd.addOption('negotiable', t('preisart.negotiable'));
-        dd.addOption('fixed', t('preisart.fixed'));
-        dd.setValue(this.preisart);
-        dd.onChange(v => { if (isPreisart(v)) this.preisart = v; });
-        this.preisartSelect = dd.selectEl;
+        dd.addOption('negotiable', t('price_type.negotiable'));
+        dd.addOption('fixed', t('price_type.fixed'));
+        dd.setValue(this.priceType);
+        dd.onChange(v => { if (isPriceType(v)) this.priceType = v; });
+        this.priceTypeSelect = dd.selectEl;
       });
 
     new Setting(container)
       .setName(t('modal.newItem.field.condition'))
       .addDropdown(dd => {
-        for (const z of ZUSTAND_OPTIONS) dd.addOption(z, t(`zustand.${z}`));
-        dd.setValue(this.zustand);
-        dd.onChange(v => { if (isZustand(v)) this.zustand = v; });
-        this.zustandSelect = dd.selectEl;
+        for (const c of CONDITIONS) dd.addOption(c, t(`condition.${c}` as import('../i18n').StringKey));
+        dd.setValue(this.condition);
+        dd.onChange(v => { if (isCondition(v)) this.condition = v; });
+        this.conditionSelect = dd.selectEl;
       });
 
     const { rerender } = renderCarrierPortoUI({ container, state: this.portoState });
@@ -249,8 +248,8 @@ export class NewItemModal extends Modal {
       .setName(t('modal.newItem.field.description'))
       .addTextArea(ta => {
         ta.setPlaceholder(t('modal.newItem.field.descPlaceholder'));
-        ta.setValue(this.beschreibung);
-        ta.onChange(v => this.beschreibung = v);
+        ta.setValue(this.description);
+        ta.onChange(v => this.description = v);
         ta.inputEl.rows = 4;
         ta.inputEl.addClass('ka-textarea');
         this.descTextArea = ta.inputEl;
@@ -261,27 +260,27 @@ export class NewItemModal extends Modal {
         .setButtonText(t('modal.newItem.submit'))
         .setCta()
         .onClick(() => {
-          if (!this.artikel.trim()) { new Notice(t('notice.validation.nameRequired')); return; }
-          if (this.preis <= 0) { new Notice(t('notice.validation.priceRequired')); return; }
+          if (!this.title.trim()) { new Notice(t('notice.validation.nameRequired')); return; }
+          if (this.price <= 0) { new Notice(t('notice.validation.priceRequired')); return; }
 
           const today = todayString();
           const listing: Listing = {
-            artikel: this.artikel.trim(),
-            beschreibung: this.beschreibung || undefined,
-            zustand: this.zustand,
-            status: 'active',
-            preis: this.preis,
-            preisart: this.preisart,
-            carrier: isCarrierName(this.portoState.carrier) ? this.portoState.carrier : undefined,
-            porto_name: this.portoState.portoName,
-            porto_price: this.portoState.portoPrice,
-            eingestellt_am: today,
-            erstmals_eingestellt_am: today,
-            eingestellt_count: 1,
-            verkauft: false,
-            bezahlt: false,
-            label_erstellt: false,
-            verschickt: false,
+            title:            this.title.trim(),
+            description:      this.description || undefined,
+            condition:        this.condition,
+            status:           'active',
+            price:            this.price,
+            price_type:       this.priceType,
+            carrier:          isCarrierName(this.portoState.carrier) ? this.portoState.carrier : undefined,
+            shipping_service: this.portoState.shippingService,
+            shipping_cost:    this.portoState.shippingCost,
+            listed_at:        today,
+            first_listed_at:  today,
+            listing_count:    1,
+            sold:             false,
+            paid:             false,
+            label_printed:    false,
+            shipped:          false,
           };
 
           this.onSubmit(listing);

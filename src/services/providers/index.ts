@@ -11,13 +11,6 @@ export interface APIResponse {
   outputTokens: number;
 }
 
-export class APIError extends Error {
-  constructor(public readonly provider: string, message: string) {
-    super(message);
-    this.name = 'APIError';
-  }
-}
-
 export interface AIProviderAdapter {
   generate(apiKey: string, model: string, prompt: string): Promise<APIResponse>;
 }

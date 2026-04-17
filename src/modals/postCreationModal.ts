@@ -21,10 +21,10 @@ export class PostCreationModal extends Modal {
       cls: 'ka-ai-hint',
     });
 
-    this.renderCopyRow(contentEl, t('modal.postCreate.label.title'), this.listing.artikel);
+    this.renderCopyRow(contentEl, t('modal.postCreate.label.title'), this.listing.title);
 
-    if (this.listing.beschreibung) {
-      this.renderCopyRow(contentEl, t('modal.postCreate.label.desc'), this.listing.beschreibung);
+    if (this.listing.description) {
+      this.renderCopyRow(contentEl, t('modal.postCreate.label.desc'), this.listing.description);
     }
 
     const closeBtn = contentEl.createEl('button', { text: t('common.close'), cls: 'ka-close-btn' });

@@ -1,31 +1,31 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
-import { Listing, ZUSTAND_OPTIONS, Zustand, Preisart, DEFAULT_CARRIER, isZustand, isPreisart, isCarrierName } from '../models/listing';
+import { Listing, CONDITIONS, Condition, PriceType, DEFAULT_CARRIER, isCondition, isPriceType, isCarrierName } from '../models/listing';
 import { PortoState, renderCarrierPortoUI } from '../utils/portoUI';
 import { t, StringKey } from '../i18n';
 
 export class EditListingModal extends Modal {
   private listing: Listing;
-  private artikel: string;
-  private zustand: Zustand;
-  private preis: number;
-  private preisart: Preisart;
+  private title: string;
+  private condition: Condition;
+  private price: number;
+  private priceType: PriceType;
   private portoState: PortoState;
-  private beschreibung: string;
+  private description: string;
   private onSubmit: (listing: Listing) => void;
 
   constructor(app: App, listing: Listing, onSubmit: (listing: Listing) => void) {
     super(app);
     this.listing = { ...listing };
-    this.artikel = listing.artikel;
-    this.zustand = listing.zustand;
-    this.preis = listing.preis;
-    this.preisart = listing.preisart;
+    this.title = listing.title;
+    this.condition = listing.condition;
+    this.price = listing.price;
+    this.priceType = listing.price_type;
     this.portoState = {
       carrier: listing.carrier ?? DEFAULT_CARRIER,
-      portoName: listing.porto_name,
-      portoPrice: listing.porto_price,
+      shippingService: listing.shipping_service,
+      shippingCost: listing.shipping_cost,
     };
-    this.beschreibung = listing.beschreibung ?? '';
+    this.description = listing.description ?? '';
     this.onSubmit = onSubmit;
   }
 
@@ -38,29 +38,29 @@ export class EditListingModal extends Modal {
     new Setting(contentEl)
       .setName(t('modal.edit.field.name'))
       .addText(text => text
-        .setValue(this.artikel)
-        .onChange(v => this.artikel = v));
+        .setValue(this.title)
+        .onChange(v => this.title = v));
 
     new Setting(contentEl)
       .setName(t('modal.edit.field.condition'))
       .addDropdown(dd => {
-        for (const z of ZUSTAND_OPTIONS) {
-          dd.addOption(z, t(`zustand.${z}` as StringKey));
+        for (const z of CONDITIONS) {
+          dd.addOption(z, t(`condition.${z}` as StringKey));
         }
-        dd.setValue(this.zustand);
-        dd.onChange(v => { if (isZustand(v)) this.zustand = v; });
+        dd.setValue(this.condition);
+        dd.onChange(v => { if (isCondition(v)) this.condition = v; });
       });
 
     new Setting(contentEl)
       .setName(t('modal.edit.field.price'))
       .addText(text => text
-        .setValue(this.preis.toString())
-        .onChange(v => this.preis = parseFloat(v) || 0))
+        .setValue(this.price.toString())
+        .onChange(v => this.price = parseFloat(v) || 0))
       .addDropdown(dd => {
-        dd.addOption('negotiable', t('preisart.negotiable'));
-        dd.addOption('fixed', t('preisart.fixed'));
-        dd.setValue(this.preisart);
-        dd.onChange(v => { if (isPreisart(v)) this.preisart = v; });
+        dd.addOption('negotiable', t('price_type.negotiable'));
+        dd.addOption('fixed', t('price_type.fixed'));
+        dd.setValue(this.priceType);
+        dd.onChange(v => { if (isPriceType(v)) this.priceType = v; });
       });
 
     renderCarrierPortoUI({
@@ -71,8 +71,8 @@ export class EditListingModal extends Modal {
     new Setting(contentEl)
       .setName(t('modal.edit.field.description'))
       .addTextArea(ta => {
-        ta.setValue(this.beschreibung);
-        ta.onChange(v => this.beschreibung = v);
+        ta.setValue(this.description);
+        ta.onChange(v => this.description = v);
         ta.inputEl.rows = 4;
         ta.inputEl.addClass('ka-textarea');
       });
@@ -82,16 +82,16 @@ export class EditListingModal extends Modal {
         .setButtonText(t('common.save'))
         .setCta()
         .onClick(() => {
-          if (!this.artikel.trim()) { new Notice(t('notice.validation.nameRequired')); return; }
+          if (!this.title.trim()) { new Notice(t('notice.validation.nameRequired')); return; }
 
-          this.listing.artikel = this.artikel.trim();
-          this.listing.zustand = this.zustand;
-          this.listing.preis = this.preis;
-          this.listing.preisart = this.preisart;
+          this.listing.title = this.title.trim();
+          this.listing.condition = this.condition;
+          this.listing.price = this.price;
+          this.listing.price_type = this.priceType;
           this.listing.carrier = isCarrierName(this.portoState.carrier) ? this.portoState.carrier : undefined;
-          this.listing.porto_name = this.portoState.portoName;
-          this.listing.porto_price = this.portoState.portoPrice;
-          this.listing.beschreibung = this.beschreibung || undefined;
+          this.listing.shipping_service = this.portoState.shippingService;
+          this.listing.shipping_cost = this.portoState.shippingCost;
+          this.listing.description = this.description || undefined;
 
           this.onSubmit(this.listing);
           this.close();

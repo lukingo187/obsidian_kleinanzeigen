@@ -1,83 +1,83 @@
-export type Preisart = 'negotiable' | 'fixed';
+export type PriceType = 'negotiable' | 'fixed';
 
-export type Zustand = 'new_with_tag' | 'new' | 'like_new' | 'ok' | 'alright' | 'defect';
+export type Condition = 'new_with_tag' | 'new' | 'like_new' | 'ok' | 'alright' | 'defect';
 
 export type Status = 'active' | 'sold' | 'shipped' | 'completed' | 'expired' | 'archived';
 
-export interface PortoEntry {
+export interface ShippingService {
   name: string;
   price: number;
 }
 
-export type CarrierName = 'DHL/Deutsche Post' | 'Hermes' | 'Abholung' | 'Sonstiges';
+export type CarrierName = 'DHL' | 'Hermes' | 'Pickup' | 'Other';
 
-export const CARRIERS: CarrierName[] = ['DHL/Deutsche Post', 'Hermes', 'Abholung', 'Sonstiges'];
+export const CARRIERS: CarrierName[] = ['DHL', 'Hermes', 'Pickup', 'Other'];
 
 export const DEFAULT_CARRIER: CarrierName = CARRIERS[0];
 
-export const CARRIER_OPTIONS: Record<string, PortoEntry[]> = {
-  'DHL/Deutsche Post': [
-    { name: 'Großbrief',    price: 1.80 },
-    { name: 'Warensendung', price: 2.70 },
-    { name: 'Maxibrief',    price: 2.90 },
-    { name: 'Päckchen S',   price: 4.19 },
-    { name: 'Päckchen M',   price: 5.19 },
-    { name: 'Paket 2kg',    price: 6.19 },
-    { name: 'Paket 5kg',    price: 7.69 },
-    { name: 'Paket 10kg',  price: 10.49 },
+export const CARRIER_SERVICES: Record<string, ShippingService[]> = {
+  'DHL': [
+    { name: 'Large Letter',  price: 1.80 },
+    { name: 'Small Parcel',  price: 2.70 },
+    { name: 'Maxi Letter',   price: 2.90 },
+    { name: 'Package S',     price: 4.19 },
+    { name: 'Package M',     price: 5.19 },
+    { name: 'Parcel 2kg',    price: 6.19 },
+    { name: 'Parcel 5kg',    price: 7.69 },
+    { name: 'Parcel 10kg',  price: 10.49 },
   ],
   'Hermes': [
-    { name: 'Päckchen', price: 5.19 },
-    { name: 'S-Paket',  price: 5.79 },
-    { name: 'M-Paket',  price: 6.99 },
-    { name: 'L-Paket',  price: 10.99 },
+    { name: 'Parcel',   price: 5.19 },
+    { name: 'S Parcel', price: 5.79 },
+    { name: 'M Parcel', price: 6.99 },
+    { name: 'L Parcel', price: 10.99 },
   ],
-  'Abholung': [
-    { name: 'Abholung', price: 0 },
+  'Pickup': [
+    { name: 'Pickup', price: 0 },
   ],
 };
 
 export interface Listing {
   // Core
-  artikel: string;
-  beschreibung?: string;
-  zustand: Zustand;
+  title: string;
+  description?: string;
+  condition: Condition;
   status: Status;
 
   // Pricing
-  preis: number;
-  preisart: Preisart;
-  verkauft_fuer?: number;
+  price: number;
+  price_type: PriceType;
+  sold_for?: number;
 
   // Listing History
-  eingestellt_am: string;
-  erstmals_eingestellt_am: string;
-  eingestellt_count: number;
+  listed_at: string;
+  first_listed_at: string;
+  listing_count: number;
 
   // Sale
-  verkauft: boolean;
-  verkauft_am?: string;
+  sold: boolean;
+  sold_at?: string;
 
   // Payment
-  bezahlt: boolean;
-  bezahlt_am?: string;
-  bezahlart?: Bezahlart;
+  paid: boolean;
+  paid_at?: string;
+  payment_method?: PaymentMethod;
 
   // Shipping
   carrier?: CarrierName;
-  porto_name?: string;
-  porto_price?: number;
-  anschrift?: string;
-  label_erstellt: boolean;
-  sendungsnummer?: string;
-  verschickt: boolean;
-  verschickt_am?: string;
+  shipping_service?: string;
+  shipping_cost?: number;
+  shipping_address?: string;
+  label_printed: boolean;
+  tracking_number?: string;
+  shipped: boolean;
+  shipped_at?: string;
 
   // Meta
   filePath?: string;
 }
 
-export const ZUSTAND_OPTIONS: Zustand[] = [
+export const CONDITIONS: Condition[] = [
   'new_with_tag', 'new', 'like_new', 'ok', 'alright', 'defect',
 ];
 
@@ -85,15 +85,15 @@ export const STATUS_OPTIONS: Status[] = [
   'active', 'sold', 'shipped', 'completed', 'expired', 'archived',
 ];
 
-export type Bezahlart = 'PayPal' | 'Überweisung' | 'Barzahlung' | 'Sonstige';
+export type PaymentMethod = 'PayPal' | 'Bank Transfer' | 'Cash' | 'Other';
 
-export const BEZAHLART_OPTIONS: Bezahlart[] = ['PayPal', 'Überweisung', 'Barzahlung', 'Sonstige'];
+export const PAYMENT_METHODS: PaymentMethod[] = ['PayPal', 'Bank Transfer', 'Cash', 'Other'];
 
-export function isZustand(v: unknown): v is Zustand {
-  return typeof v === 'string' && (ZUSTAND_OPTIONS as readonly string[]).includes(v);
+export function isCondition(v: unknown): v is Condition {
+  return typeof v === 'string' && (CONDITIONS as readonly string[]).includes(v);
 }
 
-export function isPreisart(v: unknown): v is Preisart {
+export function isPriceType(v: unknown): v is PriceType {
   return v === 'negotiable' || v === 'fixed';
 }
 
@@ -105,59 +105,86 @@ export function isCarrierName(v: unknown): v is CarrierName {
   return typeof v === 'string' && (CARRIERS as readonly string[]).includes(v);
 }
 
-export function isBezahlart(v: unknown): v is Bezahlart {
-  return typeof v === 'string' && (BEZAHLART_OPTIONS as readonly string[]).includes(v);
+export function isPaymentMethod(v: unknown): v is PaymentMethod {
+  return typeof v === 'string' && (PAYMENT_METHODS as readonly string[]).includes(v);
 }
 
+
+export function clearTransactionFields(listing: Listing): Listing {
+  return {
+    ...listing,
+    sold: false, sold_at: undefined, sold_for: undefined,
+    paid: false, paid_at: undefined, payment_method: undefined,
+    shipped: false, shipped_at: undefined, shipping_address: undefined,
+    tracking_number: undefined, label_printed: false,
+  };
+}
+
+// Precondition: targetStatus must be the logical predecessor of listing.status
+// (e.g. shipped→sold, sold→active). Caller is responsible for correct pairing.
 export function buildUndoListing(listing: Listing, targetStatus: Status): Listing {
-  const updated: Listing = { ...listing, status: targetStatus };
+  const base: Listing = { ...listing, status: targetStatus };
   if (listing.status === 'sold') {
-    updated.verkauft = false;
-    updated.verkauft_am = undefined;
-    updated.verkauft_fuer = undefined;
-    updated.bezahlt = false;
-    updated.bezahlt_am = undefined;
-    updated.bezahlart = undefined;
+    return clearTransactionFields(base);
   }
   if (listing.status === 'shipped') {
-    updated.verschickt = false;
-    updated.verschickt_am = undefined;
-    updated.anschrift = undefined;
-    updated.sendungsnummer = undefined;
-    updated.label_erstellt = false;
+    return { ...base, shipped: false, shipped_at: undefined, shipping_address: undefined,
+      tracking_number: undefined, label_printed: false };
   }
-  return updated;
+  return base;
 }
 
 
 // ── Templates ──
 
-export interface ArticleTemplate {
+export interface ListingTemplate {
   id: string;
   name: string;
-  artikel?: string;
-  preis?: number;
-  zustand?: Zustand;
-  preisart?: Preisart;
+  title?: string;
+  price?: number;
+  condition?: Condition;
+  price_type?: PriceType;
   carrier?: CarrierName;
-  porto_name?: string;
-  porto_price?: number;
-  beschreibungsvorlage?: string;
+  shipping_service?: string;
+  shipping_cost?: number;
+  description_template?: string;
 }
 
 // ── Settings ──
 
 export type AIProvider = 'anthropic' | 'openai' | 'google';
 
-export type DescriptionStyle = 'fliesstext' | 'stichpunkte' | 'kurz' | 'ausfuehrlich' | 'custom';
+export type DescriptionStyle = 'flowing' | 'bullets' | 'short' | 'detailed' | 'custom';
+
+export const AI_PROVIDERS: AIProvider[] = ['anthropic', 'openai', 'google'];
+
+export function isAIProvider(v: unknown): v is AIProvider {
+  return typeof v === 'string' && (AI_PROVIDERS as readonly string[]).includes(v);
+}
 
 export const DESCRIPTION_STYLES: { id: DescriptionStyle; label: string }[] = [
-  { id: 'fliesstext', label: 'Fließtext (Standard)' },
-  { id: 'stichpunkte', label: 'Stichpunkte' },
-  { id: 'kurz', label: 'Kurz & knapp' },
-  { id: 'ausfuehrlich', label: 'Ausführlich' },
-  { id: 'custom', label: 'Benutzerdefiniert' },
+  { id: 'flowing',   label: 'Fließtext (Standard)' },
+  { id: 'bullets',   label: 'Stichpunkte' },
+  { id: 'short',     label: 'Kurz & knapp' },
+  { id: 'detailed',  label: 'Ausführlich' },
+  { id: 'custom',    label: 'Benutzerdefiniert' },
 ];
+
+export function isDescriptionStyle(v: unknown): v is DescriptionStyle {
+  return typeof v === 'string' && DESCRIPTION_STYLES.some(s => s.id === v);
+}
+
+// Maps legacy German DescriptionStyle values to current English values.
+export function migrateDescriptionStyle(v: unknown): DescriptionStyle {
+  if (isDescriptionStyle(v)) return v;
+  const map: Record<string, DescriptionStyle> = {
+    'fliesstext':  'flowing',
+    'stichpunkte': 'bullets',
+    'kurz':        'short',
+    'ausfuehrlich':'detailed',
+  };
+  return (typeof v === 'string' && map[v]) ? map[v] : 'flowing';
+}
 
 export interface AIProviderConfig {
   apiKey: string;
@@ -170,7 +197,7 @@ export const DEFAULT_MODELS: Record<AIProvider, { id: string; label: string }[]>
     { id: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
   ],
   anthropic: [
-    { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (schnell & günstig)' },
+    { id: 'claude-haiku-4-5', label: 'Claude Haiku 4.5 (schnell & günstig)' },
     { id: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5' },
     { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
     { id: 'claude-opus-4-6', label: 'Claude Opus 4.6 (bestes Modell)' },
@@ -202,13 +229,13 @@ export interface PluginSettings {
   customStylePrompt: string;
   descriptionFooter: string;
   ebayEnabled: boolean;
-  templates: ArticleTemplate[];
+  templates: ListingTemplate[];
   showCopyOverview: boolean;
 }
 
 // Pricing per 1M tokens in USD
 export const MODEL_PRICING: Record<string, { input: number; output: number }> = {
-  'claude-haiku-4-5-20251001': { input: 0.80, output: 4.00 },
+  'claude-haiku-4-5': { input: 0.80, output: 4.00 },
   'claude-sonnet-4-5': { input: 3.00, output: 15.00 },
   'claude-sonnet-4-6': { input: 3.00, output: 15.00 },
   'claude-opus-4-6': { input: 15.00, output: 75.00 },
@@ -237,7 +264,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   aiProvider: 'google',
   aiProviders: {
     google: { apiKey: '', model: 'gemini-2.0-flash' },
-    anthropic: { apiKey: '', model: 'claude-haiku-4-5-20251001' },
+    anthropic: { apiKey: '', model: 'claude-haiku-4-5' },
     openai: { apiKey: '', model: 'gpt-4o-mini' },
   },
   aiUsage: {
@@ -245,7 +272,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     anthropic: { ...DEFAULT_USAGE },
     openai: { ...DEFAULT_USAGE },
   },
-  descriptionStyle: 'fliesstext',
+  descriptionStyle: 'flowing',
   customStylePrompt: '',
   descriptionFooter: DEFAULT_DESCRIPTION_FOOTER,
   ebayEnabled: false,

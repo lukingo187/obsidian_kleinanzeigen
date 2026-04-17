@@ -1,15 +1,15 @@
-import { AIProvider, PluginSettings, ZUSTAND_OPTIONS, CARRIERS, CARRIER_OPTIONS, MODEL_PRICING, type DescriptionStyle, type Zustand, type CarrierName, isZustand, isCarrierName } from '../models/listing';
+import { AIProvider, PluginSettings, CONDITIONS, CARRIERS, CARRIER_SERVICES, MODEL_PRICING, type DescriptionStyle, type Condition, type CarrierName, isCondition, isCarrierName } from '../models/listing';
 import { formatCurrency } from '../utils/formatting';
 import { getAdapter } from './providers/index';
 import { t } from '../i18n';
 
 export interface ParsedListing {
-  artikel: string;
-  zustand: Zustand;
+  title: string;
+  condition: Condition;
   carrier?: CarrierName;
-  porto_name?: string;
-  porto_price?: number;
-  beschreibung: string;
+  shippingService?: string;
+  shippingCost?: number;
+  description: string;
 }
 
 export class AIService {
@@ -66,21 +66,21 @@ export class AIService {
 Nutzereingabe:
 "${userText}"
 
-Gültige Zustand-Werte: ${ZUSTAND_OPTIONS.join(', ')}
+Gültige Zustand-Werte: ${CONDITIONS.join(', ')}
 Versanddienstleister: ${CARRIERS.join(', ')}
 Porto-Optionen pro Carrier:
-${Object.entries(CARRIER_OPTIONS).map(([carrier, options]) =>
+${Object.entries(CARRIER_SERVICES).map(([carrier, options]) =>
   `${carrier}: ${options.map(o => `${o.name} (${formatCurrency(o.price)})`).join(', ')}`
 ).join('\n')}
 
 Antworte NUR mit einem JSON-Objekt (kein Markdown, kein Code-Block), mit diesen Feldern:
 {
-  "artikel": "Kurzer, prägnanter Artikelname/Titel",
-  "zustand": "Einer der gültigen Zustand-Werte (am besten passend)",
-  "carrier": "Versanddienstleister (DHL/Deutsche Post, Hermes, Abholung, Sonstiges) falls erwähnt, sonst null",
-  "porto_name": "Name der Porto-Option (z.B. Großbrief, Päckchen S) falls erwähnt, sonst null",
-  "porto_price": "Preis als Zahl (z.B. 1.80) falls erwähnt, sonst null",
-  "beschreibung": "Verkaufsbeschreibung für Kleinanzeigen (${styleInstruction}, freundlich, professionell, Zustand erwähnen, kein Preis, keine Emojis)"
+  "title": "Kurzer, prägnanter Artikelname/Titel",
+  "condition": "Einer der gültigen Zustand-Werte (am besten passend)",
+  "carrier": "Versanddienstleister (DHL, Hermes, Pickup, Other) falls erwähnt, sonst null",
+  "shippingService": "Name der Porto-Option (z.B. Large Letter, Small Parcel) falls erwähnt, sonst null",
+  "shippingCost": "Preis als Zahl (z.B. 1.80) falls erwähnt, sonst null",
+  "description": "Verkaufsbeschreibung für Kleinanzeigen (${styleInstruction}, freundlich, professionell, Zustand erwähnen, kein Preis, keine Emojis)"
 }
 
 ${footerInstruction}`;
@@ -88,15 +88,15 @@ ${footerInstruction}`;
 
   private getStyleInstruction(): string {
     const styleMap: Record<Exclude<DescriptionStyle, 'custom'>, string> = {
-      fliesstext: '3-5 Sätze als Fließtext',
-      stichpunkte: 'als Stichpunkte/Aufzählung',
-      kurz: 'sehr kurz, 1-2 Sätze',
-      ausfuehrlich: 'ausführlich, 5-8 Sätze',
+      flowing:    '3-5 Sätze als Fließtext',
+      bullets:    'als Stichpunkte/Aufzählung',
+      short:      'sehr kurz, 1-2 Sätze',
+      detailed:   'ausführlich, 5-8 Sätze',
     };
 
     const style = this.settings.descriptionStyle;
     if (style === 'custom') {
-      return this.settings.customStylePrompt.trim() || styleMap['fliesstext'];
+      return this.settings.customStylePrompt.trim() || styleMap['flowing'];
     }
     return styleMap[style];
   }
@@ -111,14 +111,15 @@ ${footerInstruction}`;
     try {
       const parsed = JSON.parse(jsonStr);
       return {
-        artikel: parsed.artikel ?? '',
-        zustand: isZustand(parsed.zustand) ? parsed.zustand : 'ok',
-        carrier: isCarrierName(parsed.carrier) ? parsed.carrier : undefined,
-        porto_name: parsed.porto_name,
-        porto_price: parsed.porto_price != null ? Number(parsed.porto_price) : undefined,
-        beschreibung: parsed.beschreibung ?? '',
+        title:           parsed.title ?? '',
+        condition:       isCondition(parsed.condition) ? parsed.condition : 'ok',
+        carrier:         isCarrierName(parsed.carrier) ? parsed.carrier : undefined,
+        shippingService: parsed.shippingService,
+        shippingCost:    parsed.shippingCost != null ? Number(parsed.shippingCost) : undefined,
+        description:     parsed.description ?? '',
       };
-    } catch {
+    } catch (e) {
+      console.error('AI response JSON parse failed:', e);
       throw new Error(t('notice.ai.error'));
     }
   }

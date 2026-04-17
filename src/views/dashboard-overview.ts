@@ -7,6 +7,7 @@ import { formatCurrency, formatDateDE, formatPortoDisplay } from '../utils/forma
 import { ConfirmModal } from '../modals/confirmModal';
 import type { FilterStatus, OverviewState, DashboardCallbacks, DashboardActions, DropdownState } from './dashboard-types';
 import { renderStatusBadge, addSectionHeader, addDetailRow, createCopyButton } from './dashboard-helpers';
+import type { StringKey } from '../i18n';
 
 function getFilteredListings(listings: Listing[], state: OverviewState): Listing[] {
   let filtered: Listing[];
@@ -22,8 +23,8 @@ function getFilteredListings(listings: Listing[], state: OverviewState): Listing
   if (state.searchQuery.trim()) {
     const q = state.searchQuery.toLowerCase();
     filtered = filtered.filter(l =>
-      l.artikel.toLowerCase().includes(q) ||
-      (l.anschrift ?? '').toLowerCase().includes(q)
+      l.title.toLowerCase().includes(q) ||
+      (l.shipping_address ?? '').toLowerCase().includes(q)
     );
   }
 
@@ -35,17 +36,17 @@ function sortListings(listings: Listing[], state: OverviewState): Listing[] {
   return [...listings].sort((a, b) => {
     let cmp = 0;
     switch (state.sortColumn) {
-      case 'artikel':
-        cmp = a.artikel.localeCompare(b.artikel, 'de');
+      case 'title':
+        cmp = a.title.localeCompare(b.title, 'de');
         break;
-      case 'preis':
-        cmp = a.preis - b.preis;
+      case 'price':
+        cmp = a.price - b.price;
         break;
-      case 'versand':
-        cmp = (a.porto_price ?? 0) - (b.porto_price ?? 0);
+      case 'shipping':
+        cmp = (a.shipping_cost ?? 0) - (b.shipping_cost ?? 0);
         break;
-      case 'eingestellt':
-        cmp = (a.eingestellt_am ?? '').localeCompare(b.eingestellt_am ?? '');
+      case 'listed':
+        cmp = (a.listed_at ?? '').localeCompare(b.listed_at ?? '');
         break;
       case 'status':
         cmp = a.status.localeCompare(b.status, 'de');
@@ -155,11 +156,8 @@ function renderBulkBar(
   if (selected.every(l => l.status === 'completed')) {
     const btn = actionsEl.createEl('button', { text: t('overview.bulk.archive'), cls: 'ka-action-btn ka-archive-action-btn' });
     btn.addEventListener('click', async () => {
-      let failed = 0;
-      for (const l of selected) {
-        try { await actions.updateListing({ ...l, status: 'archived' }); }
-        catch { failed++; }
-      }
+      const results = await Promise.allSettled(selected.map(l => actions.updateListing({ ...l, status: 'archived' })));
+      const failed = results.filter(r => r.status === 'rejected').length;
       state.selectedPaths.clear();
       if (failed > 0) new Notice(t('overview.error.archiveFailed', { failed, total: selected.length }));
       actions.refreshAfterWrite();
@@ -169,11 +167,8 @@ function renderBulkBar(
   if (selected.every(l => l.status === 'active')) {
     const btn = actionsEl.createEl('button', { text: t('overview.bulk.expire'), cls: 'ka-action-btn ka-expired-btn' });
     btn.addEventListener('click', async () => {
-      let failed = 0;
-      for (const l of selected) {
-        try { await actions.updateListing({ ...l, status: 'expired' }); }
-        catch { failed++; }
-      }
+      const results = await Promise.allSettled(selected.map(l => actions.updateListing({ ...l, status: 'expired' })));
+      const failed = results.filter(r => r.status === 'rejected').length;
       state.selectedPaths.clear();
       if (failed > 0) new Notice(t('overview.error.expireFailed', { failed, total: selected.length }));
       actions.refreshAfterWrite();
@@ -184,11 +179,8 @@ function renderBulkBar(
     const btn = actionsEl.createEl('button', { text: t('common.delete'), cls: 'ka-action-btn ka-delete-btn' });
     btn.addEventListener('click', () => {
       new ConfirmModal(app, t('overview.confirm.delete', { name: `${selected.length} items` }), async () => {
-        let failed = 0;
-        for (const l of selected) {
-          try { await actions.deleteListing(l); }
-          catch { failed++; }
-        }
+        const results = await Promise.allSettled(selected.map(l => actions.deleteListing(l)));
+        const failed = results.filter(r => r.status === 'rejected').length;
         state.selectedPaths.clear();
         if (failed > 0) new Notice(t('overview.error.deleteFailed', { failed, total: selected.length }));
         actions.refreshAfterWrite();
@@ -282,10 +274,10 @@ function renderTable(
 
   type SortKey = OverviewState['sortColumn'];
   const sortableColumns: [string, SortKey][] = [
-    [t('overview.col.item'), 'artikel'],
-    [t('overview.col.price'), 'preis'],
-    [t('overview.col.shipping'), 'versand'],
-    [t('overview.col.listed'), 'eingestellt'],
+    [t('overview.col.item'), 'title'],
+    [t('overview.col.price'), 'price'],
+    [t('overview.col.shipping'), 'shipping'],
+    [t('overview.col.listed'), 'listed'],
     [t('overview.col.status'), 'status'],
   ];
   for (const [label, key] of sortableColumns) {
@@ -301,7 +293,7 @@ function renderTable(
         state.sortDirection = state.sortDirection === 'asc' ? 'desc' : 'asc';
       } else {
         state.sortColumn = key;
-        state.sortDirection = key === 'eingestellt' ? 'desc' : 'asc';
+        state.sortDirection = key === 'listed' ? 'desc' : 'asc';
       }
       renderTableOnly();
     });
@@ -326,10 +318,10 @@ function renderTable(
       renderTableOnly();
     });
 
-    row.createEl('td', { text: listing.artikel });
-    row.createEl('td', { text: `${formatCurrency(listing.preis)} ${listing.preisart ?? ''}`.trim() });
-    row.createEl('td', { text: formatPortoDisplay(listing.carrier, listing.porto_name, listing.porto_price) });
-    row.createEl('td', { text: listing.eingestellt_am ? formatDateDE(listing.eingestellt_am) : '' });
+    row.createEl('td', { text: listing.title });
+    row.createEl('td', { text: `${formatCurrency(listing.price)} ${listing.price_type ?? ''}`.trim() });
+    row.createEl('td', { text: formatPortoDisplay(listing.carrier, listing.shipping_service, listing.shipping_cost) });
+    row.createEl('td', { text: listing.listed_at ? formatDateDE(listing.listed_at) : '' });
 
     const statusCell = row.createEl('td');
     const badge = statusCell.createSpan({ cls: `ka-badge ka-status-${listing.status.toLowerCase()}` });
@@ -380,16 +372,11 @@ function renderActions(
     const delBtn = cell.createEl('button', { text: t('common.delete'), cls: 'ka-action-btn ka-delete-btn' });
     delBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      new ConfirmModal(app, t('overview.confirm.delete', { name: listing.artikel }), async () => {
-        try {
-          await actions.deleteListing(listing);
-          if (state.expandedListing?.filePath === listing.filePath) {
-            state.expandedListing = null;
-          }
-          actions.refreshAfterWrite();
-        } catch (e) {
-          new Notice(t('notice.saveError', { error: e instanceof Error ? e.message : String(e) }));
+      new ConfirmModal(app, t('overview.confirm.delete', { name: listing.title }), async () => {
+        if (state.expandedListing?.filePath === listing.filePath) {
+          state.expandedListing = null;
         }
+        await actions.deleteListing(listing);
       }).open();
     });
   }
@@ -433,57 +420,53 @@ function renderDetail(
   });
 
   const titleRow = detail.createDiv({ cls: 'ka-detail-title' });
-  titleRow.createEl('h3', { text: listing.artikel });
+  titleRow.createEl('h3', { text: listing.title });
   const badge = titleRow.createSpan({ cls: `ka-badge ka-status-${listing.status.toLowerCase()}` });
   renderStatusBadge(badge, listing.status);
-  createCopyButton(titleRow, t('overview.copy.title'), listing.artikel);
+  createCopyButton(titleRow, t('overview.copy.title'), listing.title);
 
   const grid = detail.createDiv({ cls: 'ka-detail-grid' });
 
-  // Listing info
   const listingSection = grid.createDiv({ cls: 'ka-detail-section' });
   addSectionHeader(listingSection, t('overview.detail.listing'), () => callbacks.onEditListing(listing));
-  addDetailRow(listingSection, t('overview.detail.price'), `${formatCurrency(listing.preis)} ${listing.preisart ? t(`preisart.${listing.preisart}`) : ''}`);
-  addDetailRow(listingSection, t('overview.detail.shippingCost'), formatPortoDisplay(listing.carrier, listing.porto_name, listing.porto_price));
-  if (listing.eingestellt_am) {
-    addDetailRow(listingSection, t('overview.detail.listedOn'), formatDateDE(listing.eingestellt_am));
+  addDetailRow(listingSection, t('overview.detail.price'), `${formatCurrency(listing.price)} ${listing.price_type ? t(`price_type.${listing.price_type}` as StringKey) : ''}`);
+  addDetailRow(listingSection, t('overview.detail.shippingCost'), formatPortoDisplay(listing.carrier, listing.shipping_service, listing.shipping_cost));
+  if (listing.listed_at) {
+    addDetailRow(listingSection, t('overview.detail.listedOn'), formatDateDE(listing.listed_at));
   }
-  if (listing.erstmals_eingestellt_am) {
-    addDetailRow(listingSection, t('overview.detail.firstListed'), formatDateDE(listing.erstmals_eingestellt_am));
+  if (listing.first_listed_at) {
+    addDetailRow(listingSection, t('overview.detail.firstListed'), formatDateDE(listing.first_listed_at));
   }
-  addDetailRow(listingSection, t('overview.detail.listingCount'), listing.eingestellt_count.toString());
-  addDetailRow(listingSection, t('overview.detail.condition'), t(`zustand.${listing.zustand}`));
+  addDetailRow(listingSection, t('overview.detail.listingCount'), listing.listing_count.toString());
+  addDetailRow(listingSection, t('overview.detail.condition'), t(`condition.${listing.condition}` as StringKey));
 
-  // Sale info
-  if (listing.verkauft) {
+  if (listing.sold) {
     const saleSection = grid.createDiv({ cls: 'ka-detail-section' });
     addSectionHeader(saleSection, t('overview.detail.sale'), () => callbacks.onSold(listing));
-    if (listing.verkauft_fuer != null) addDetailRow(saleSection, t('overview.detail.soldFor'), formatCurrency(listing.verkauft_fuer));
-    if (listing.verkauft_am) addDetailRow(saleSection, t('overview.detail.soldOn'), formatDateDE(listing.verkauft_am));
-    if (listing.bezahlart) addDetailRow(saleSection, t('overview.detail.paymentMethod'), listing.bezahlart);
-    addDetailRow(saleSection, t('overview.detail.paid'), listing.bezahlt ? t('common.yes') : t('common.no'));
-    if (listing.bezahlt_am) addDetailRow(saleSection, t('overview.detail.paidOn'), formatDateDE(listing.bezahlt_am));
+    if (listing.sold_for != null) addDetailRow(saleSection, t('overview.detail.soldFor'), formatCurrency(listing.sold_for));
+    if (listing.sold_at) addDetailRow(saleSection, t('overview.detail.soldOn'), formatDateDE(listing.sold_at));
+    if (listing.payment_method) addDetailRow(saleSection, t('overview.detail.paymentMethod'), listing.payment_method);
+    addDetailRow(saleSection, t('overview.detail.paid'), listing.paid ? t('common.yes') : t('common.no'));
+    if (listing.paid_at) addDetailRow(saleSection, t('overview.detail.paidOn'), formatDateDE(listing.paid_at));
   }
 
-  // Shipping info
-  if (listing.verschickt || listing.anschrift) {
+  if (listing.shipped || listing.shipping_address) {
     const shipSection = grid.createDiv({ cls: 'ka-detail-section' });
     addSectionHeader(shipSection, t('overview.detail.shipping'), () => callbacks.onShip(listing));
-    if (listing.anschrift) addDetailRow(shipSection, t('overview.detail.address'), listing.anschrift);
+    if (listing.shipping_address) addDetailRow(shipSection, t('overview.detail.address'), listing.shipping_address);
     if (listing.carrier) addDetailRow(shipSection, t('overview.detail.carrier'), listing.carrier);
-    if (listing.porto_name) addDetailRow(shipSection, t('overview.detail.porto'), formatPortoDisplay(listing.carrier, listing.porto_name, listing.porto_price));
-    if (listing.sendungsnummer) addDetailRow(shipSection, t('overview.detail.tracking'), listing.sendungsnummer);
-    addDetailRow(shipSection, t('overview.detail.labelPrinted'), listing.label_erstellt ? t('common.yes') : t('common.no'));
-    if (listing.verschickt_am) addDetailRow(shipSection, t('overview.detail.shippedOn'), formatDateDE(listing.verschickt_am));
+    if (listing.shipping_service) addDetailRow(shipSection, t('overview.detail.porto'), formatPortoDisplay(listing.carrier, listing.shipping_service, listing.shipping_cost));
+    if (listing.tracking_number) addDetailRow(shipSection, t('overview.detail.tracking'), listing.tracking_number);
+    addDetailRow(shipSection, t('overview.detail.labelPrinted'), listing.label_printed ? t('common.yes') : t('common.no'));
+    if (listing.shipped_at) addDetailRow(shipSection, t('overview.detail.shippedOn'), formatDateDE(listing.shipped_at));
   }
 
-  // Finances
-  if (listing.verkauft_fuer != null) {
+  if (listing.sold_for != null) {
     const finSection = grid.createDiv({ cls: 'ka-detail-section' });
     finSection.createEl('h4', { text: t('overview.detail.finances') });
 
-    const revenue = listing.verkauft_fuer;
-    const shippingCost = listing.porto_price ?? 0;
+    const revenue = listing.sold_for;
+    const shippingCost = listing.shipping_cost ?? 0;
     const profit = revenue - shippingCost;
 
     addDetailRow(finSection, t('overview.detail.revenue'), formatCurrency(revenue));
@@ -491,16 +474,14 @@ function renderDetail(
     addDetailRow(finSection, t('overview.detail.profit'), profit >= 0 ? formatCurrency(profit) : `−${formatCurrency(Math.abs(profit))}`);
   }
 
-  // Description
-  if (listing.beschreibung) {
+  if (listing.description) {
     const descSection = detail.createDiv({ cls: 'ka-detail-section' });
     const descHeader = descSection.createDiv({ cls: 'ka-desc-header' });
     descHeader.createEl('h4', { text: t('overview.detail.description') });
-    createCopyButton(descHeader, t('overview.copy.desc'), listing.beschreibung!);
-    descSection.createDiv({ cls: 'ka-desc-box', text: listing.beschreibung });
+    createCopyButton(descHeader, t('overview.copy.desc'), listing.description!);
+    descSection.createDiv({ cls: 'ka-desc-box', text: listing.description });
   }
 
-  // Aktionen
   const actionsEl = detail.createDiv({ cls: 'ka-detail-actions' });
   renderActions(actionsEl, app, listing, callbacks, actions, state, 'detail');
 }
@@ -514,7 +495,6 @@ export function renderOverview(
   actions: DashboardActions,
   dropdownState: DropdownState,
 ) {
-  // Closure for partial re-render (search/sort updates only table + bulk bar)
   const doRenderTableOnly = () => {
     root.querySelector('.ka-bulk-bar')?.remove();
     root.querySelector('.ka-table')?.remove();
