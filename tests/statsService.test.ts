@@ -14,9 +14,9 @@ describe('calculateStats', () => {
     const listings = [
       makeListing({ status: 'active' }),
       makeListing({ status: 'active' }),
-      makeListing({ status: 'sold', verkauft: true, verkauft_fuer: 25 }),
-      makeListing({ status: 'shipped', verkauft: true, verkauft_fuer: 15 }),
-      makeListing({ status: 'completed', verkauft: true, verkauft_fuer: 30 }),
+      makeListing({ status: 'sold', sold: true, sold_for: 25 }),
+      makeListing({ status: 'shipped', sold: true, sold_for: 15 }),
+      makeListing({ status: 'completed', sold: true, sold_for: 30 }),
     ];
     const stats = calculateStats(listings);
     expect(stats.activeCount).toBe(2);
@@ -26,11 +26,11 @@ describe('calculateStats', () => {
     expect(stats.totalSoldCount).toBe(3);
   });
 
-  it('sums revenue from verkauft_fuer', () => {
+  it('sums revenue from sold_for', () => {
     const listings = [
-      makeListing({ verkauft: true, verkauft_fuer: 25 }),
-      makeListing({ verkauft: true, verkauft_fuer: 15.50 }),
-      makeListing({ verkauft: false }),
+      makeListing({ sold: true, sold_for: 25 }),
+      makeListing({ sold: true, sold_for: 15.50 }),
+      makeListing({ sold: false }),
     ];
     const stats = calculateStats(listings);
     expect(stats.totalRevenue).toBeCloseTo(40.50);
@@ -38,8 +38,8 @@ describe('calculateStats', () => {
 
   it('calculates shipping costs and profit', () => {
     const listings = [
-      makeListing({ verkauft: true, verkauft_fuer: 50, porto_price: 6.19, carrier: 'DHL/Deutsche Post' }),
-      makeListing({ verkauft: true, verkauft_fuer: 20, porto_price: 1.80, carrier: 'DHL/Deutsche Post' }),
+      makeListing({ sold: true, sold_for: 50, shipping_cost: 6.19, carrier: 'DHL' }),
+      makeListing({ sold: true, sold_for: 20, shipping_cost: 1.80, carrier: 'DHL' }),
     ];
     const stats = calculateStats(listings);
     expect(stats.totalRevenue).toBeCloseTo(70);
@@ -47,9 +47,9 @@ describe('calculateStats', () => {
     expect(stats.totalProfit).toBeCloseTo(62.01);
   });
 
-  it('ignores porto for unsold items', () => {
+  it('ignores shipping cost for unsold items', () => {
     const listings = [
-      makeListing({ verkauft: false, porto_price: 6.19 }),
+      makeListing({ sold: false, shipping_cost: 6.19 }),
     ];
     const stats = calculateStats(listings);
     expect(stats.totalShippingCost).toBe(0);
@@ -65,8 +65,8 @@ describe('calculateExtendedStats', () => {
 
   it('calculates average sale duration in days', () => {
     const listings = [
-      makeListing({ verkauft: true, eingestellt_am: '2026-03-01', verkauft_am: '2026-03-11' }),
-      makeListing({ verkauft: true, eingestellt_am: '2026-03-01', verkauft_am: '2026-03-05' }),
+      makeListing({ sold: true, listed_at: '2026-03-01', sold_at: '2026-03-11' }),
+      makeListing({ sold: true, listed_at: '2026-03-01', sold_at: '2026-03-05' }),
     ];
     const stats = calculateExtendedStats(listings);
     // (10 + 4) / 2 = 7
@@ -75,9 +75,9 @@ describe('calculateExtendedStats', () => {
 
   it('calculates average sale price', () => {
     const listings = [
-      makeListing({ verkauft: true, verkauft_fuer: 20 }),
-      makeListing({ verkauft: true, verkauft_fuer: 40 }),
-      makeListing({ verkauft: false }),
+      makeListing({ sold: true, sold_for: 20 }),
+      makeListing({ sold: true, sold_for: 40 }),
+      makeListing({ sold: false }),
     ];
     const stats = calculateExtendedStats(listings);
     expect(stats.avgSalePrice).toBe(30);
@@ -91,41 +91,41 @@ describe('calculateMonthlyStats', () => {
 
   it('groups listings by month', () => {
     const listings = [
-      makeListing({ eingestellt_am: '2026-03-01' }),
-      makeListing({ eingestellt_am: '2026-03-15' }),
-      makeListing({ eingestellt_am: '2026-02-10' }),
+      makeListing({ listed_at: '2026-03-01' }),
+      makeListing({ listed_at: '2026-03-15' }),
+      makeListing({ listed_at: '2026-02-10' }),
     ];
     const stats = calculateMonthlyStats(listings);
     expect(stats).toHaveLength(2);
     // Newest first
-    expect(stats[0].label).toBe('Mär 2026');
-    expect(stats[0].eingestellt).toBe(2);
+    expect(stats[0].label).toBe('Mar 2026');
+    expect(stats[0].listed).toBe(2);
     expect(stats[1].label).toBe('Feb 2026');
-    expect(stats[1].eingestellt).toBe(1);
+    expect(stats[1].listed).toBe(1);
   });
 
   it('calculates revenue and shipping per month', () => {
     const listings = [
       makeListing({
-        eingestellt_am: '2026-03-01',
-        verkauft: true,
-        verkauft_am: '2026-03-10',
-        verkauft_fuer: 50,
-        porto_price: 6.19,
+        listed_at: '2026-03-01',
+        sold: true,
+        sold_at: '2026-03-10',
+        sold_for: 50,
+        shipping_cost: 6.19,
       }),
     ];
     const stats = calculateMonthlyStats(listings);
-    expect(stats[0].umsatz).toBeCloseTo(50);
-    expect(stats[0].portokosten).toBeCloseTo(6.19);
-    expect(stats[0].gewinn).toBeCloseTo(43.81);
+    expect(stats[0].revenue).toBeCloseTo(50);
+    expect(stats[0].shippingCost).toBeCloseTo(6.19);
+    expect(stats[0].profit).toBeCloseTo(43.81);
   });
 });
 
 describe('calculateYearlyStats', () => {
   it('groups listings by year', () => {
     const listings = [
-      makeListing({ eingestellt_am: '2026-03-01' }),
-      makeListing({ eingestellt_am: '2025-11-15' }),
+      makeListing({ listed_at: '2026-03-01' }),
+      makeListing({ listed_at: '2025-11-15' }),
     ];
     const stats = calculateYearlyStats(listings);
     expect(stats).toHaveLength(2);

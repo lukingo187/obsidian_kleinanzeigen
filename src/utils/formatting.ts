@@ -31,7 +31,7 @@ export function formatPortoDisplay(
   portoPrice?: number,
 ): string {
   if (!carrier) return '—';
-  if (carrier === 'Abholung') return 'Abholung';
+  if (carrier === 'Pickup') return 'Pickup';
   const name = portoName || carrier;
   return `${name} (${formatCurrency(portoPrice ?? 0)})`;
 }

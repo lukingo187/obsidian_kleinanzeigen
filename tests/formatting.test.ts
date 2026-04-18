@@ -44,20 +44,20 @@ describe('formatCurrency', () => {
 });
 
 describe('formatPortoDisplay', () => {
-  it('formats a carrier preset with name and price', () => {
-    expect(formatPortoDisplay('DHL/Deutsche Post', 'Großbrief', 1.80)).toBe('Großbrief (1,80€)');
+  it('formats a DHL service with name and price', () => {
+    expect(formatPortoDisplay('DHL', 'Large Letter', 1.80)).toBe('Large Letter (1,80€)');
   });
 
-  it('formats Abholung', () => {
-    expect(formatPortoDisplay('Abholung', 'Abholung', 0)).toBe('Abholung');
+  it('formats Pickup', () => {
+    expect(formatPortoDisplay('Pickup', 'Pickup', 0)).toBe('Pickup');
   });
 
-  it('formats Sonstiges with name', () => {
-    expect(formatPortoDisplay('Sonstiges', 'GLS Express', 4.50)).toBe('GLS Express (4,50€)');
+  it('formats Other carrier with service name', () => {
+    expect(formatPortoDisplay('Other', 'GLS Express', 4.50)).toBe('GLS Express (4,50€)');
   });
 
-  it('formats Sonstiges without name', () => {
-    expect(formatPortoDisplay('Sonstiges', '', 3.00)).toBe('Sonstiges (3,00€)');
+  it('formats Other carrier without service name', () => {
+    expect(formatPortoDisplay('Other', '', 3.00)).toBe('Other (3,00€)');
   });
 
   it('returns dash when no carrier is set', () => {

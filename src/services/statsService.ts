@@ -139,7 +139,7 @@ export function calculateExtendedStats(listings: Listing[]): ExtendedStats {
   return { avgSaleDurationDays, avgSalePrice };
 }
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export function calculateMonthlyStats(listings: Listing[]): PeriodStats[] {
   return calculatePeriodStats(listings, 7, key => {

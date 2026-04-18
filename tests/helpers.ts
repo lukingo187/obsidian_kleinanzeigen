@@ -2,18 +2,18 @@ import { Listing } from '../src/models/listing';
 
 export function makeListing(overrides: Partial<Listing> = {}): Listing {
   return {
-    artikel: 'Test Artikel',
-    zustand: 'Gut',
-    status: 'Aktiv',
-    preis: 10,
-    preisart: 'VB',
-    eingestellt_am: '2026-03-01',
-    erstmals_eingestellt_am: '2026-03-01',
-    eingestellt_count: 1,
-    verkauft: false,
-    bezahlt: false,
-    label_erstellt: false,
-    verschickt: false,
+    title: 'Test Item',
+    condition: 'ok',
+    status: 'active',
+    price: 10,
+    price_type: 'negotiable',
+    listed_at: '2026-03-01',
+    first_listed_at: '2026-03-01',
+    listing_count: 1,
+    sold: false,
+    paid: false,
+    label_printed: false,
+    shipped: false,
     ...overrides,
   };
 }
